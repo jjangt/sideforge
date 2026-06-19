@@ -2,9 +2,7 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   deploy:
@@ -27,9 +25,20 @@ jobs:
       - name: Build web
         run: npx expo export --platform web
 
-      - name: Deploy to Cloudflare Pages
+      # main 브랜치 → 운영 배포 (Production)
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=sideforge
+          command: pages deploy dist --project-name=sideforge --branch=main
+
+      # develop 브랜치 → 프리뷰 배포 (Preview)
+      - name: Deploy to Preview
+        if: github.ref == 'refs/heads/develop'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=sideforge --branch=develop

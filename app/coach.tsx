@@ -1,13 +1,16 @@
 import { useState, useRef } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useBrandStore } from '../src/stores/useBrandStore';
 import { useDashboardStore } from '../src/stores/useDashboardStore';
 import { useCoachStore } from '../src/stores/useCoachStore';
 import { useAI } from '../src/hooks/useAI';
 import { generateId } from '../src/utils/id';
 import { CoachMessage } from '../src/types/coach';
+import { Container, Card } from '../src/components/ui';
 
 export default function CoachScreen() {
+  const { t } = useTranslation();
   const [input, setInput] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   const brand = useBrandStore((s) => s.brand);
@@ -41,23 +44,23 @@ export default function CoachScreen() {
   return (
     <KeyboardAvoidingView className="flex-1 bg-brand-background" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Header */}
-      <View className="px-6 pt-12 pb-4 border-b border-brand-surface">
-        <Text className="text-brand-text text-xl font-bold">🤖 AI 공동창업자</Text>
-        <Text className="text-brand-muted text-xs mt-1">브랜드 성장을 함께 고민합니다</Text>
+      <View className="px-6 pt-12 pb-4 border-b border-brand-border">
+        <Container className="px-0">
+          <Text className="text-brand-text text-xl font-bold">🤖 {t('coach.title')}</Text>
+          <Text className="text-brand-muted text-xs mt-1">{t('coach.subtitle')}</Text>
+        </Container>
       </View>
 
       {/* Messages */}
       <ScrollView ref={scrollRef} className="flex-1 px-6 py-4" contentContainerStyle={{ paddingBottom: 20 }}>
         {messages.length === 0 && (
           <View className="items-center py-8">
-            <Text className="text-brand-muted text-sm text-center mb-6">
-              무엇이든 물어보세요!{'\n'}브랜드 성장을 함께 고민하는 AI 파트너입니다.
-            </Text>
-            <View className="gap-2 w-full">
+            <Text className="text-brand-muted text-sm text-center mb-6">{t('coach.empty')}</Text>
+            <View className="gap-2 w-full max-w-md">
               {suggestedQuestions.map((q, i) => (
-                <Pressable key={i} onPress={() => handleSend(q)} className="bg-brand-surface p-3 rounded-xl active:opacity-80">
+                <Card key={i} onPress={() => handleSend(q)} variant="glass" className="p-3">
                   <Text className="text-brand-text text-sm">{q}</Text>
-                </Pressable>
+                </Card>
               ))}
             </View>
           </View>
@@ -65,7 +68,7 @@ export default function CoachScreen() {
 
         {messages.map((msg) => (
           <View key={msg.id} className={`mb-4 max-w-[85%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
-            <View className={`p-4 rounded-2xl ${msg.role === 'user' ? 'bg-brand-primary' : 'bg-brand-surface'}`}>
+            <View className={`p-4 rounded-2xl ${msg.role === 'user' ? 'bg-brand-primary' : 'bg-brand-surface border border-brand-border'}`}>
               <Text className={`text-sm leading-6 ${msg.role === 'user' ? 'text-white' : 'text-brand-text'}`}>
                 {msg.content}
               </Text>
@@ -74,24 +77,24 @@ export default function CoachScreen() {
         ))}
 
         {isLoading && (
-          <View className="self-start bg-brand-surface p-4 rounded-2xl">
-            <Text className="text-brand-muted text-sm">생각하고 있어요...</Text>
+          <View className="self-start bg-brand-surface border border-brand-border p-4 rounded-2xl">
+            <Text className="text-brand-muted text-sm">{t('coach.thinking')}</Text>
           </View>
         )}
       </ScrollView>
 
       {/* Input */}
-      <View className="px-4 py-3 border-t border-brand-surface flex-row gap-2">
+      <View className="px-4 py-3 border-t border-brand-border flex-row gap-2">
         <TextInput
-          className="flex-1 bg-brand-surface text-brand-text p-3 rounded-xl text-sm"
-          placeholder="메시지를 입력하세요..."
-          placeholderTextColor="#8892B0"
+          className="flex-1 bg-brand-surface border border-brand-border text-brand-text p-3 rounded-xl text-sm"
+          placeholder={t('coach.placeholder')}
+          placeholderTextColor="#94A3B8"
           value={input}
           onChangeText={setInput}
           onSubmitEditing={() => handleSend()}
         />
-        <Pressable onPress={() => handleSend()} className="bg-brand-primary px-4 rounded-xl items-center justify-center active:opacity-80">
-          <Text className="text-white font-bold">→</Text>
+        <Pressable onPress={() => handleSend()} className="bg-brand-primary px-5 rounded-xl items-center justify-center active:opacity-80">
+          <Text className="text-white font-bold text-lg">→</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

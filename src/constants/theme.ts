@@ -1,26 +1,17 @@
 export const COLORS = {
   brand: {
-    primary: '#6C63FF',
-    secondary: '#3F3D56',
-    accent: '#FF6584',
-    background: '#1A1A2E',
-    surface: '#16213E',
-    text: '#EAEAEA',
-    muted: '#8892B0',
+    primary: '#7C3AED',
+    primaryLight: '#A78BFA',
+    secondary: '#1E1B4B',
+    accent: '#F472B6',
+    background: '#0F0A1F',
+    surface: '#1A1333',
+    surfaceLight: '#251E3E',
+    text: '#F8FAFC',
+    muted: '#94A3B8',
+    border: '#2D2654',
+    success: '#34D399',
+    warning: '#FBBF24',
+    error: '#F87171',
   },
-  score: {
-    high: '#4CAF50',
-    medium: '#FFC107',
-    low: '#FF5252',
-  },
-} as const;
-
-export const FONT_SIZES = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 22,
-  xxl: 28,
-  hero: 36,
 } as const;

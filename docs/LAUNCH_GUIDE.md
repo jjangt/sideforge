@@ -1,0 +1,238 @@
+# 서비스 런칭 세팅 가이드
+
+> 모든 항목이 무료입니다. 과금 발생하지 않습니다.
+
+---
+
+## Step 1: YouTube Data API 키 발급 (무료)
+
+1. https://console.cloud.google.com 접속
+2. Google 계정 로그인
+3. 상단 "프로젝트 선택" → "새 프로젝트" → 이름: `SideForge` → 만들기
+4. 좌측 메뉴 → "API 및 서비스" → "라이브러리"
+5. `YouTube Data API v3` 검색 → 클릭 → "사용" 버튼
+6. 좌측 "사용자 인증 정보" → "사용자 인증 정보 만들기" → "API 키"
+7. 생성된 API 키 복사 (`AIzaSy...` 형태)
+
+### 무료 한도
+
+- 일일 쿼터: 10,000 단위
+- 1회 분석 ≈ 13 쿼터 소모
+- 하루 약 770회 분석 가능 (충분)
+
+### 보안 설정 (권장)
+
+- API 키 → "키 제한" → "HTTP 리퍼러" → 도메인만 허용
+- 또는 "IP 주소" → Workers 서버 IP만 허용
+
+---
+
+## Step 2: Cloudflare D1 데이터베이스 생성 (무료)
+
+### 사전 조건
+
+```bash
+npm install -g wrangler
+wrangler login
+```
+
+### DB 생성
+
+```bash
+cd D:\sideline\sideforge\api
+npm install
+wrangler d1 create sideforge-db
+```
+
+출력 예시:
+```
+database_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+### wrangler.toml에 ID 반영
+
+`api/wrangler.toml` 파일에서:
+```toml
+database_id = "TODO_REPLACE_WITH_ACTUAL_ID"
+```
+→ 출력된 실제 ID로 교체
+
+### 테이블 생성
+
+```bash
+wrangler d1 execute sideforge-db --file=./schema.sql
+```
+
+### 무료 한도
+
+| 항목 | 한도 |
+|------|------|
+| 스토리지 | 5GB |
+| 읽기 | 5,000,000/일 |
+| 쓰기 | 100,000/일 |
+
+---
+
+## Step 3: Cloudflare Workers 환경변수 설정
+
+### 방법 1: CLI
+
+```bash
+wrangler secret put YOUTUBE_API_KEY
+# → Step 1에서 발급받은 키 입력
+
+wrangler secret put JWT_SECRET
+# → 아무 긴 문자열 입력 (예: openssl rand -hex 32 결과)
+```
+
+### 방법 2: 대시보드
+
+Cloudflare 대시보드 → Workers & Pages → sideforge-api → 설정 → 변수 → 환경 변수 추가
+
+| 변수 | 값 |
+|------|-----|
+| `YOUTUBE_API_KEY` | `AIzaSy...` (Step 1에서 복사) |
+| `JWT_SECRET` | 랜덤 문자열 (32자 이상) |
+
+---
+
+## Step 4: Workers AI 무료 제한 설정
+
+### 무료 한도
+
+- 하루 10,000 뉴런 (약 300~500회 요청)
+- 초과 시: 요청 실패 (과금 안 됨, 에러만 반환)
+
+### 서비스 제한 전략
+
+| 플랜 | 제한 |
+|------|------|
+| Free | 평생 3회 |
+| Plus | 월 30회 |
+| Pro | 무제한 |
+| 서버 일일 상한 | 280회 (코드에서 차단) |
+
+### 코드 레벨 제한 (이미 구현됨)
+
+- `api/src/auth.ts`의 `checkAnalysisLimit()` 함수
+- `api/src/index.ts`의 일일 280회 전체 제한
+
+### 과금 방지
+
+- Cloudflare 무료 플랜에서는 초과 시 **자동 차단**
+- Paid 플랜 가입 안 하면 **절대 돈 안 나감**
+
+---
+
+## Step 5: Workers 배포
+
+```bash
+cd D:\sideline\sideforge\api
+npm install
+```
+
+### 로컬 테스트
+
+```bash
+wrangler dev
+# → http://localhost:8787 에서 API 테스트
+```
+
+### 운영 배포
+
+```bash
+wrangler deploy
+# → https://sideforge-api.{계정}.workers.dev
+```
+
+### 개발 환경 배포
+
+```bash
+wrangler deploy --env development
+# → https://sideforge-api-dev.{계정}.workers.dev
+```
+
+### 배포 확인
+
+```
+https://sideforge-api.{계정}.workers.dev/api/health
+→ {"status":"ok","env":"production"} 나오면 성공
+```
+
+---
+
+## Step 6: 프론트엔드에 API URL 연결
+
+`D:\sideline\sideforge\.env` 파일 생성:
+
+```env
+# 운영
+EXPO_PUBLIC_API_URL=https://sideforge-api.{계정}.workers.dev
+
+# 개발 시
+EXPO_PUBLIC_API_URL=http://localhost:8787
+```
+
+---
+
+## Step 7: 광고 수익
+
+### Google AdSense
+
+1. https://www.google.com/adsense 접속
+2. "시작하기" → 사이트 URL 입력 (`sideforge.pages.dev`)
+3. AdSense 코드를 사이트에 삽입 (승인 대기)
+4. 승인 후 광고 단위 생성
+
+사전 조건:
+- 사이트에 실제 콘텐츠 필요
+- 최소 몇 주간의 트래픽 필요
+
+### 카카오 애드핏 (한국 트래픽 추천)
+
+1. https://adfit.kakao.com 접속
+2. 매체 등록 → 광고 단위 생성
+3. 스크립트 삽입
+
+→ AdSense보다 승인 쉽고 한국 광고 단가 높음
+
+### 광고 위치
+
+| 위치 | 형태 | 대상 |
+|------|------|------|
+| 리포트 하단 | 배너 광고 | Free 유저 |
+| 분석 대기 중 화면 | 전면 광고 | Free 유저 |
+| 마이페이지 | 네이티브 광고 | Free 유저 |
+
+→ **유료 플랜 유저에게는 광고 비표시** (업그레이드 동기)
+
+---
+
+## Step 8: 무료 범위 종합
+
+| 서비스 | 무료 한도 | 초과 시 |
+|--------|-----------|---------|
+| Cloudflare Pages | 무제한 | - |
+| Cloudflare Workers | 100,000 요청/일 | 차단 |
+| Cloudflare D1 | 5GB | 차단 |
+| Cloudflare Workers AI | 10,000 뉴런/일 | 차단 (과금 없음) |
+| YouTube Data API | 10,000 쿼터/일 | 차단 |
+| Google AdSense | 무료 | - |
+| 카카오 애드핏 | 무료 | - |
+
+**결론: 하루 약 300회 분석까지 완전 무료. 사용자 100~200명까지 비용 0원.**
+
+---
+
+## Step 9: 실행 순서 요약
+
+1. Google Cloud Console → YouTube API 키 발급
+2. `wrangler login`
+3. `wrangler d1 create sideforge-db` → ID 복사 → `wrangler.toml`에 반영
+4. `wrangler d1 execute sideforge-db --file=./schema.sql`
+5. `wrangler secret put YOUTUBE_API_KEY`
+6. `wrangler secret put JWT_SECRET`
+7. `wrangler deploy`
+8. `.env`에 `EXPO_PUBLIC_API_URL` 설정
+9. `npx expo start --web --port 5847 --clear`
+10. 테스트 (회원가입 → URL 입력 → 분석 확인)

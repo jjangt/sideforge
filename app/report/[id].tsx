@@ -231,9 +231,9 @@ export default function ReportScreen() {
                     className="text-brand-primary-light font-bold text-sm mb-2"
                     onPress={() => b.url && (window as any).open?.(`https://${b.url}`, '_blank')}
                   >
-                    {b.name || b} ↗
+                    {typeof b === 'string' ? b : (b.name || 'Channel')} ↗
                   </Text>
-                  {b.reason && <Text className="text-brand-muted text-sm leading-6">{b.reason}</Text>}
+                  {b.reason && <Text className="text-brand-muted text-sm leading-6">{typeof b.reason === 'string' ? b.reason : JSON.stringify(b.reason)}</Text>}
                 </Card>
               ))}
             </View>

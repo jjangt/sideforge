@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { Container, Button, Card, Badge } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 
@@ -70,17 +70,20 @@ const FAQ = [
 ];
 
 export default function PricingScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+
   return (
     <ScrollView className="flex-1 bg-brand-background">
-      <Container className="py-16">
+      <Container size={isWide ? 'lg' : 'md'} className="py-16">
         {/* Header */}
         <Text className="text-brand-text text-3xl font-bold text-center mb-3">가격</Text>
         <Text className="text-brand-muted text-sm text-center mb-12">필요한 만큼만 선택하세요. 언제든 변경 가능합니다.</Text>
 
-        {/* Plans */}
-        <View className="gap-4 mb-16">
+        {/* Plans - 가로(넓은 화면) / 세로(모바일) */}
+        <View style={isWide ? { flexDirection: 'row', gap: 16 } : { gap: 16 }} className="mb-16">
           {PLANS.map((plan) => (
-            <Card key={plan.name} variant={plan.highlight ? 'highlight' : 'default'} className="p-6">
+            <Card key={plan.name} variant={plan.highlight ? 'highlight' : 'default'} className="p-6" style={isWide ? { flex: 1 } : undefined}>
               {plan.highlight && <Badge label="인기" variant="primary" className="mb-3" />}
               <Text className="text-brand-text font-bold text-xl">{plan.name}</Text>
               <View className="flex-row items-end mt-2 mb-4">

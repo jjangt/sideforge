@@ -1,4 +1,4 @@
-import { View, Pressable } from 'react-native';
+import { View, Pressable, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 
 type Variant = 'default' | 'highlight' | 'glass';
@@ -8,6 +8,7 @@ interface CardProps {
   variant?: Variant;
   onPress?: () => void;
   className?: string;
+  style?: ViewStyle;
 }
 
 const variantStyles: Record<Variant, string> = {
@@ -16,16 +17,16 @@ const variantStyles: Record<Variant, string> = {
   glass: 'bg-brand-surface/80 border border-brand-primary/15',
 };
 
-export function Card({ children, variant = 'default', onPress, className = '' }: CardProps) {
+export function Card({ children, variant = 'default', onPress, className = '', style }: CardProps) {
   const base = `rounded-2xl p-5 ${variantStyles[variant]} ${className}`;
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} className={`${base} active:opacity-90`}>
+      <Pressable onPress={onPress} className={`${base} active:opacity-90`} style={style}>
         {children}
       </Pressable>
     );
   }
 
-  return <View className={base}>{children}</View>;
+  return <View className={base} style={style}>{children}</View>;
 }

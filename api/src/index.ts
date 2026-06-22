@@ -152,7 +152,7 @@ function filterByPlan(data: any, plan: string): any {
     };
   }
 
-  // Free: 제한된 데이터만
+  // Free: 제한된 데이터만 (각 항목 1개는 미리보기 제공)
   return {
     channel: { title: channel.title, thumbnail: channel.thumbnail, subscribers: channel.subscribers, videoCount: channel.videoCount },
     videos: [],
@@ -161,8 +161,10 @@ function filterByPlan(data: any, plan: string): any {
       summary: analysis.summary,
       strengths: analysis.strengths?.slice(0, 1) || [],
       weaknesses: analysis.weaknesses?.slice(0, 1) || [],
-      actions: 'LOCKED',
-      contentIdeas: 'LOCKED',
+      actions: analysis.actions?.slice(0, 1) || [],
+      actionsLocked: true,
+      contentIdeas: analysis.contentIdeas?.slice(0, 1) || [],
+      contentIdeasLocked: true,
       benchmarks: 'LOCKED',
     },
   };

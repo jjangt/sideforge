@@ -114,11 +114,13 @@ export default function ReportScreen() {
           )}
         </Section>
 
-        {/* 개선 액션 — Free는 잠금 */}
+        {/* 개선 액션 — Free는 1개 미리보기 + 잠금 */}
         {analysis.actions === 'LOCKED' ? (
           <LockedSection title="개선 액션" icon="🎯" description="지금 바로 실행할 수 있는 구체적인 개선 방법 3가지" plan="Plus" />
         ) : (
-          <Section title="지금 바로 할 수 있는 것" icon="🎯" className="mb-4">
+          <Section title="지금 바로 할 수 있는 것" icon="🎯" className="mb-4"
+            {...(analysis.actionsLocked ? { badge: 'Plus 플랜 이상' } : {})}
+          >
             <View className="gap-3">
               {analysis.actions?.map((a: string, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
@@ -130,15 +132,23 @@ export default function ReportScreen() {
                   </View>
                 </Card>
               ))}
+              {analysis.actionsLocked && (
+                <View className="items-center pt-3">
+                  <Text className="text-brand-muted text-xs mb-2">나머지 2개는 Plus 플랜에서 확인 가능</Text>
+                  <Button title="업그레이드" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                </View>
+              )}
             </View>
           </Section>
         )}
 
-        {/* 추천 콘텐츠 — Free는 잠금 */}
+        {/* 추천 콘텐츠 — Free는 1개 미리보기 + 잠금 */}
         {analysis.contentIdeas === 'LOCKED' ? (
           <LockedSection title="추천 콘텐츠" icon="💡" description="AI가 추천하는 다음 콘텐츠 주제 3가지" plan="Plus" />
         ) : (
-          <Section title="추천 콘텐츠" icon="💡" className="mb-4">
+          <Section title="추천 콘텐츠" icon="💡" className="mb-4"
+            {...(analysis.contentIdeasLocked ? { badge: 'Plus 플랜 이상' } : {})}
+          >
             <View className="gap-3">
               {analysis.contentIdeas?.map((c: string, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
@@ -146,6 +156,12 @@ export default function ReportScreen() {
                   <Text className="text-brand-text text-sm flex-1 leading-6">{c}</Text>
                 </View>
               ))}
+              {analysis.contentIdeasLocked && (
+                <View className="items-center pt-3">
+                  <Text className="text-brand-muted text-xs mb-2">나머지 2개는 Plus 플랜에서 확인 가능</Text>
+                  <Button title="업그레이드" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                </View>
+              )}
             </View>
           </Section>
         )}

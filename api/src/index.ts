@@ -108,10 +108,12 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
 
   const channelData = await fetchChannelData(channelId, env.YOUTUBE_API_KEY);
   const videos = await fetchRecentVideos(channelData.id, env.YOUTUBE_API_KEY);
-  const analysis = await analyzeWithAI(env.AI, channelData, videos);
+  // 동일 카테고리 인기 영상 검색 (벤치마킹용)
+  const trendingVideos = await fetchTrendingInCategory(channelData, env.YOUTUBE_API_KEY);
+  const analysis = await analyzeWithAI(env.AI, channelData, videos, trendingVideos);
 
   const reportId = crypto.randomUUID();
-  const fullData = { channel: channelData, videos, analysis };
+  const fullData = { channel: channelData, videos, trendingVideos, analysis };
   await env.DB.prepare(
     'INSERT INTO reports (id, user_id, channel_id, channel_name, platform, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(reportId, userId, channelData.id, channelData.title, 'youtube', JSON.stringify(fullData), new Date().toISOString()).run();
@@ -317,11 +319,65 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
   return data.items[0].id;
 }
 
+/**
+ * 동일 카테고리 인기/급상승 영상 검색
+ * 채널 설명 + 영상 제목에서 키워드 추출 → YouTube Search API 호출
+ */
+async function fetchTrendingInCategory(channel: any, apiKey: string): Promise<any[]> {
+  try {
+    // 채널 제목/설명에서 키워드 추출 (1~2단어)
+    const keywords = extractKeywords(channel.title, channel.description);
+    if (!keywords) return [];
+
+    const searchRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(keywords)}&type=video&order=viewCount&maxResults=5&publishedAfter=${getThreeMonthsAgo()}&key=${apiKey}`
+    );
+    const searchData = await searchRes.json() as any;
+    if (!searchData.items?.length) return [];
+
+    // 영상 상세 정보 가져오기
+    const videoIds = searchData.items.map((i: any) => i.id.videoId).join(',');
+    const videoRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds}&key=${apiKey}`
+    );
+    const videoData = await videoRes.json() as any;
+
+    return (videoData.items || []).map((v: any) => ({
+      id: v.id,
+      title: v.snippet.title,
+      channelTitle: v.snippet.channelTitle,
+      views: Number(v.statistics.viewCount || 0),
+      likes: Number(v.statistics.likeCount || 0),
+      comments: Number(v.statistics.commentCount || 0),
+      publishedAt: v.snippet.publishedAt,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** 채널명/설명에서 핵심 키워드 추출 */
+function extractKeywords(title: string, description: string): string {
+  const text = `${title} ${description || ''}`.slice(0, 200);
+  // 한국어/영어 단어 추출 (불용어 제외)
+  const stopWords = ['나', '는', '를', '을', '의', '에', '다', '이', '그', 'the', 'a', 'is', 'to', 'and', 'of'];
+  const words = text.replace(/[^\w\uAC00-\uD7AF\s]/g, '').split(/\s+/).filter(w => w.length > 1 && !stopWords.includes(w.toLowerCase()));
+  // 가장 많이 나온 키워드 2개 선택
+  return words.slice(0, 3).join(' ');
+}
+
+/** 3개월 전 날짜 (ISO 형식) */
+function getThreeMonthsAgo(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 3);
+  return d.toISOString();
+}
+
 // ─── AI Analysis ──────────────────────────────────────────────────────────────
 
-async function analyzeWithAI(ai: any, channel: any, videos: any[]) {
+async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideos: any[]) {
   const { buildYouTubePrompt } = await import('./prompts/youtube');
-  const prompt = buildYouTubePrompt(channel, videos);
+  const prompt = buildYouTubePrompt(channel, videos, trendingVideos);
 
   const result = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 2048 });
 

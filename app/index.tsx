@@ -1,8 +1,123 @@
 import { View, Text, ScrollView } from 'react-native';
+import { useAuthStore } from '../src/stores/useAuthStore';
 import { Container, Button, Card, Badge } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 
 export default function LandingScreen() {
+  const user = useAuthStore((s) => s.user);
+
+  // 로그인 상태 + 플랜별 분기
+  if (user) {
+    return <LoggedInHome user={user} />;
+  }
+
+  return <GuestHome />;
+}
+/**
+ * 로그인된 사용자 메인 페이지 — 플랜별 다른 UI
+ */
+function LoggedInHome({ user }: { user: any }) {
+  const plan = user.plan;
+  const remaining = plan === 'pro' || plan === 'admin'
+    ? '무제한'
+    : `${Math.max(0, (plan === 'plus' ? 30 : 3) - user.analysisCount)}회`;
+
+  const planLabel = ({ free: 'Free', plus: 'Plus', pro: 'Pro', admin: 'Admin' } as Record<string, string>)[plan] || 'Free';
+  const platformCount = ({ free: '1개', plus: '2개', pro: '전체', admin: '전체' } as Record<string, string>)[plan] || '1개';
+
+  return (
+    <ScrollView className="flex-1 bg-brand-background">
+      <Container className="pt-16 pb-12">
+        {/* 환영 메시지 */}
+        <Text className="text-brand-text text-2xl font-bold mb-1">
+          {user.name ? `${user.name}님, 안녕하세요` : '안녕하세요'} 👋
+        </Text>
+        <Text className="text-brand-muted text-sm mb-8">
+          오늘도 채널 성장을 함께해요.
+        </Text>
+
+        {/* 현재 플랜 정보 */}
+        <Card variant="highlight" className="mb-6 p-5">
+          <View className="flex-row justify-between items-center">
+            <View>
+              <Text className="text-brand-muted text-xs">현재 플랜</Text>
+              <Text className="text-brand-text text-lg font-bold">{planLabel}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-brand-muted text-xs">남은 분석</Text>
+              <Text className="text-brand-primary font-bold text-lg">{remaining}</Text>
+            </View>
+          </View>
+          <View className="flex-row justify-between mt-3 pt-3 border-t border-brand-border/30">
+            <View>
+              <Text className="text-brand-muted text-xs">사용 가능 플랫폼</Text>
+              <Text className="text-brand-text text-sm font-bold">{platformCount}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-brand-muted text-xs">리포트 열람</Text>
+              <Text className="text-brand-text text-sm font-bold">{plan === 'free' ? '7일' : '무제한'}</Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* 빠른 액션 */}
+        <Button
+          title={plan === 'free' ? '무료 분석 시작 🔍' : '채널 분석하기 🔍'}
+          size="lg"
+          onPress={() => navigate(ROUTES.analyze)}
+          className="w-full mb-4"
+        />
+
+        {plan === 'free' && (
+          <Button
+            title="플랜 업그레이드 →"
+            variant="outline"
+            onPress={() => navigate(ROUTES.pricing)}
+            className="w-full mb-6"
+          />
+        )}
+
+        {/* 플랜별 기능 안내 */}
+        <Text className="text-brand-text text-lg font-bold mb-4">
+          {planLabel} 플랜으로 이용 가능한 기능
+        </Text>
+        <View className="gap-3 mb-8">
+          <FeatureRow icon="✅" text="AI 기반 채널 분석" available />
+          <FeatureRow icon="✅" text="점수 + 요약 리포트" available />
+          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="개선 액션 제안" available={plan !== 'free'} />
+          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="추천 콘텐츠 제안" available={plan !== 'free'} />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="댓글/반응 분석" available={plan === 'pro' || plan === 'admin'} />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="경쟁 채널 벤치마킹" available={plan === 'pro' || plan === 'admin'} />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="주간 정기 모니터링" available={plan === 'pro' || plan === 'admin'} />
+        </View>
+      </Container>
+
+      {/* Footer */}
+      <Container className="pb-24 items-center">
+        <View className="flex-row gap-4">
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.pricing)}>가격</Text>
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.terms)}>이용약관</Text>
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.privacy)}>개인정보처리방침</Text>
+        </View>
+        <Text className="text-brand-muted text-xs mt-2">© 2026 SideForge. All rights reserved.</Text>
+      </Container>
+    </ScrollView>
+  );
+}
+
+function FeatureRow({ icon, text, available }: { icon: string; text: string; available: boolean }) {
+  return (
+    <View className="flex-row items-center gap-3">
+      <Text className="text-base">{icon}</Text>
+      <Text className={`text-sm flex-1 ${available ? 'text-brand-text' : 'text-brand-muted'}`}>{text}</Text>
+    </View>
+  );
+}
+
+/**
+ * 비로그인 사용자 메인 페이지 — 서비스 소개 + 가입 유도
+ */
+function GuestHome() {
   return (
     <ScrollView className="flex-1 bg-brand-background">
       {/* Hero */}

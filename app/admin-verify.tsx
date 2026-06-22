@@ -38,19 +38,18 @@ export default function AdminVerifyScreen() {
    */
   async function checkTOTPStatus() {
     try {
+      // 빈 코드로 호출 — 시크릿 없으면 needSetup 반환, 있으면 400 (code required)
       const result = await api.adminVerifyTOTP('');
-      // 시크릿이 없으면 needSetup: true + 시크릿 반환
       if (result.needSetup) {
         setSecret(result.secret || '');
         setStep('setup');
+      } else {
+        // 성공했다면 이미 인증됨
+        setStep('verify');
       }
     } catch (e: any) {
-      // TOTP code required = 이미 설정됨, 코드 입력 필요
-      if (e.message?.includes('TOTP code required') || e.message?.includes('Invalid')) {
-        setStep('verify');
-      } else {
-        setStep('verify');
-      }
+      // 400 = code required (시크릿 이미 등록됨, 코드 입력 필요)
+      setStep('verify');
     }
   }
 

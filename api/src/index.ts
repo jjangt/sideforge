@@ -184,17 +184,17 @@ async function handleAdminTOTP(request: Request, userId: string, totpSecret: str
   const { verifyTOTP, generateTOTPSecret } = await import('./admin-auth');
   const body = await request.json() as { code?: string };
 
-  // 최초 설정: totp_secret이 없으면 생성
-  if (!totpSecret) {
+  // 최초 설정: totp_secret이 없거나 빈 문자열이면 생성
+  if (!totpSecret || totpSecret.trim() === '') {
     const secret = generateTOTPSecret();
     await env.DB.prepare('UPDATE users SET totp_secret = ? WHERE id = ?').bind(secret, userId).run();
     return json({ needSetup: true, secret, message: 'Google Authenticator에 이 시크릿을 등록하세요' });
   }
 
   // 코드 검증
-  if (!body.code) return json({ error: 'TOTP code required' }, 400);
+  if (!body.code || body.code.trim() === '') return json({ error: 'TOTP code required' }, 400);
 
-  const valid = await verifyTOTP(totpSecret, body.code);
+  const valid = await verifyTOTP(totpSecret, body.code.trim());
   if (!valid) return json({ error: 'Invalid TOTP code' }, 401);
 
   // 1시간 세션 발급

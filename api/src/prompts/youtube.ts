@@ -13,6 +13,13 @@ export function buildYouTubePrompt(channel: any, videos: any[], trendingVideos: 
   const likeRatio = avgViews > 0 ? ((avgLikes / avgViews) * 100).toFixed(1) : '0';
   const bestVideo = videos.length > 0 ? videos.reduce((best, v) => v.views > best.views ? v : best, videos[0]) : null;
 
+  // 업로드 빈도 계산 (팩트)
+  const lastUploadDate = videos.length > 0 ? videos[0].publishedAt : null;
+  const daysSinceLastUpload = lastUploadDate ? Math.floor((Date.now() - new Date(lastUploadDate).getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const uploadFrequency = videos.length >= 2
+    ? Math.round((new Date(videos[0].publishedAt).getTime() - new Date(videos[videos.length - 1].publishedAt).getTime()) / (1000 * 60 * 60 * 24) / videos.length)
+    : null;
+
   const trendingSection = trendingVideos.length > 0 ? `
 ■ 동일 카테고리 최근 인기 영상 (실제 데이터):
 ${trendingVideos.map(v => `- "${v.title}" by ${v.channelTitle} (조회수: ${v.views.toLocaleString()}, 좋아요: ${v.likes.toLocaleString()}, ID: ${v.id})`).join('\n')}
@@ -31,6 +38,12 @@ ${trendingVideos.map(v => `- "${v.title}" by ${v.channelTitle} (조회수: ${v.v
 3. 좋아요 비율 1% 미만은 강점이 아님 — 업계 평균은 3%
 4. 구독자 100명 미만 채널의 조회수 300회는 강점이 아님
 5. 모든 피드백에 구체적 수치를 포함할 것
+6. 참고할 실제 채널/영상을 모르면 '[채널명]'처럼 대괄호로 채우지 마세요. 모르면 언급하지 마세요.
+7. 인기 영상 데이터가 없으면 벤치마킹/추천에서 억지로 채널을 만들지 마세요. 데이터 기반으로만 작성.
+8. "~참고" "~추천" 같은 말을 할 때 실제 존재하는 구체적 정보가 없으면 해당 항목을 비워두세요.
+6. 실제 데이터에 없는 채널명/영상명을 만들어내지 말 것 — '[채널명]' 같은 placeholder 금지
+7. 동일 카테고리 인기 영상 데이터가 없으면 벤치마킹/참고 채널 언급하지 말 것
+8. 참고할 데이터가 없는 항목은 일반적 전략만 작성 (가짜 채널명 넣지 말 것)
 
 ■ 채널 데이터:
 - 채널명: ${channel.title}

@@ -46,10 +46,13 @@ export default {
         return result;
       }
 
-      // Get Report
+      // Get Report (인증 필요 — 플랜별 데이터 분기)
       if (path.startsWith('/api/report/') && request.method === 'GET') {
         const reportId = path.replace('/api/report/', '');
-        return handleGetReport(reportId, env);
+        const userId = await getUserIdFromRequest(request, env);
+        if (!userId) return json({ error: 'Unauthorized' }, 401);
+        const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
+        return handleGetReport(reportId, user?.plan || 'free', env);
       }
 
       // My Reports
@@ -80,17 +83,59 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
   const analysis = await analyzeWithAI(env.AI, channelData, videos);
 
   const reportId = crypto.randomUUID();
+  const fullData = { channel: channelData, videos, analysis };
   await env.DB.prepare(
     'INSERT INTO reports (id, user_id, channel_id, channel_name, platform, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(reportId, userId, channelData.id, channelData.title, 'youtube', JSON.stringify({ channel: channelData, videos, analysis }), new Date().toISOString()).run();
+  ).bind(reportId, userId, channelData.id, channelData.title, 'youtube', JSON.stringify(fullData), new Date().toISOString()).run();
 
-  return json({ reportId, channel: channelData, analysis });
+  // 플랜별 응답 필터링
+  const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
+  const filtered = filterByPlan(fullData, user?.plan || 'free');
+
+  return json({ reportId, ...filtered, plan: user?.plan || 'free' });
 }
 
-async function handleGetReport(reportId: string, env: Env): Promise<Response> {
+async function handleGetReport(reportId: string, plan: string, env: Env): Promise<Response> {
   const result = await env.DB.prepare('SELECT * FROM reports WHERE id = ?').bind(reportId).first() as any;
   if (!result) return json({ error: 'Report not found' }, 404);
-  return json({ id: result.id, channelName: result.channel_name, platform: result.platform, data: JSON.parse(result.data), createdAt: result.created_at });
+
+  const fullData = JSON.parse(result.data);
+  const filtered = filterByPlan(fullData, plan);
+
+  return json({ id: result.id, channelName: result.channel_name, platform: result.platform, data: filtered, plan, createdAt: result.created_at });
+}
+
+// 플랜별 데이터 필터링 (백엔드에서 잘라냄)
+function filterByPlan(data: any, plan: string): any {
+  if (plan === 'admin' || plan === 'pro') return data;
+
+  const { channel, videos, analysis } = data;
+
+  if (plan === 'plus') {
+    return {
+      channel,
+      videos: videos.slice(0, 10),
+      analysis: {
+        ...analysis,
+        benchmarks: analysis.benchmarks ? [analysis.benchmarks[0]] : [],
+      },
+    };
+  }
+
+  // Free: 제한된 데이터만
+  return {
+    channel: { title: channel.title, thumbnail: channel.thumbnail, subscribers: channel.subscribers, videoCount: channel.videoCount },
+    videos: [],
+    analysis: {
+      score: analysis.score,
+      summary: analysis.summary,
+      strengths: analysis.strengths?.slice(0, 1) || [],
+      weaknesses: analysis.weaknesses?.slice(0, 1) || [],
+      actions: 'LOCKED',
+      contentIdeas: 'LOCKED',
+      benchmarks: 'LOCKED',
+    },
+  };
 }
 
 async function handleMyReports(userId: string, env: Env): Promise<Response> {

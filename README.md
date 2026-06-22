@@ -82,6 +82,7 @@ sideforge/
 
 ### 인프라 & 아키텍처
 - [인프라 구성 (Cloudflare)](docs/architecture/infrastructure.md) ← **서버/AI/DB 구성**
+- [배포 가이드](docs/architecture/deployment.md) ← **도메인/CI/CD**
 - [System Design](docs/architecture/system-design.md)
 - [Frontend](docs/architecture/frontend.md)
 - [Backend](docs/architecture/backend.md)

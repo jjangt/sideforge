@@ -1,0 +1,19 @@
+name = "sideforge-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sideforge-db"
+database_id = "TODO_REPLACE_WITH_ACTUAL_ID"
+
+[vars]
+ENVIRONMENT = "production"
+
+[env.development]
+name = "sideforge-api-dev"
+[env.development.vars]
+ENVIRONMENT = "development"

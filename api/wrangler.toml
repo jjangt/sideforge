@@ -8,7 +8,7 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "sideforge-db"
-database_id = "TODO_REPLACE_WITH_ACTUAL_ID"
+database_id = "50a5ddaa-bd35-4230-8938-ccd28477170a"
 
 [vars]
 ENVIRONMENT = "production"
@@ -30,7 +30,7 @@ ENVIRONMENT = "development"
 [[env.development.d1_databases]]
 binding = "DB"
 database_name = "sideforge-db-dev"
-database_id = "TODO_REPLACE_WITH_DEV_DB_ID"
+database_id = "42afbfc7-3423-4a53-a8ff-b7ef6aca5951"
 
 [env.development.ai]
 binding = "AI"

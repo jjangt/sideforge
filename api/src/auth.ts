@@ -9,8 +9,9 @@ const PLAN_LIMITS: Record<string, number> = {
   admin: 999999,
 };
 
-// 관리자 이메일 (환경변수로도 추가 가능)
-const ADMIN_EMAILS = ['admin@sideforge.dev'];
+// 관리자 이메일 (환경변수에서 로드)
+const getAdminEmails = (env: any): string[] => 
+  (env.ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export async function handleSignup(request: Request, env: Env): Promise<Response
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password, env.PASSWORD_SALT || 'sideforge-salt');
   const now = new Date().toISOString();
-  const plan = ADMIN_EMAILS.includes(email) ? 'admin' : 'free';
+  const plan = getAdminEmails(env).includes(email) ? 'admin' : 'free';
 
   await env.DB.prepare(
     'INSERT INTO users (id, email, password_hash, name, plan, analysis_count, provider, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -71,7 +72,7 @@ export async function handleGoogleAuth(request: Request, env: Env): Promise<Resp
     // 신규 가입
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const plan = ADMIN_EMAILS.includes(email) ? 'admin' : 'free';
+    const plan = getAdminEmails(env).includes(email) ? 'admin' : 'free';
 
     await env.DB.prepare(
       'INSERT INTO users (id, email, password_hash, name, plan, analysis_count, provider, avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'

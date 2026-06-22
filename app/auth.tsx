@@ -30,7 +30,14 @@ export default function AuthScreen() {
       } else {
         await signup(email, password, name);
       }
-      navigate(ROUTES.analyze, { replace: true });
+
+      // 관리자 계정이면 2FA 페이지로 이동
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.plan === 'admin') {
+        navigate('/admin-verify', { replace: true });
+      } else {
+        navigate(ROUTES.analyze, { replace: true });
+      }
     } catch (e: any) {
       toast({ message: e.message || '오류가 발생했습니다', type: 'error' });
     } finally {

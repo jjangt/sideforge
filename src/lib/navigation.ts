@@ -7,6 +7,7 @@ export const ROUTES = {
   mypage: '/mypage',
   contact: '/contact',
   admin: '/admin',
+  adminVerify: '/admin-verify',
   pricing: '/pricing',
   terms: '/terms',
   privacy: '/privacy',

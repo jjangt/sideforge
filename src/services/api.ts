@@ -64,4 +64,9 @@ export const api = {
   // Admin
   adminStats: () => request<{ todayReports: number; totalUsers: number; totalReports: number }>('/api/admin/stats'),
   adminUsers: () => request<{ users: any[] }>('/api/admin/users'),
+  adminVerifyTOTP: (code: string) =>
+    request<{ success?: boolean; adminSession?: string; needSetup?: boolean; secret?: string }>('/api/admin/verify-totp', { method: 'POST', body: JSON.stringify({ code }) }),
+  setAdminSession: async (token: string) => {
+    await AsyncStorage.setItem('admin_session', token);
+  },
 };

@@ -1,0 +1,161 @@
+/**
+ * 관리자 2차 인증 페이지
+ * 
+ * 흐름:
+ * 1. 관리자 로그인 후 /admin 접근 시 이 페이지로 이동
+ * 2. 최초: TOTP 시크릿 표시 → Authenticator에 등록
+ * 3. 이후: 6자리 코드 입력 → 검증 → 관리자 페이지 접근
+ */
+
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { useAuthStore } from '../src/stores/useAuthStore';
+import { api } from '../src/services/api';
+import { Container, Card, Button, Input, Badge } from '../src/components/ui';
+import { navigate, ROUTES } from '../src/lib';
+import { toast } from '../src/lib';
+
+export default function AdminVerifyScreen() {
+  const user = useAuthStore((s) => s.user);
+  const [step, setStep] = useState<'loading' | 'setup' | 'verify'>('loading');
+  const [secret, setSecret] = useState('');
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  /** 비관리자 접근 차단 */
+  useEffect(() => {
+    if (!user || user.plan !== 'admin') {
+      navigate(ROUTES.landing, { replace: true });
+      return;
+    }
+    checkTOTPStatus();
+  }, [user]);
+
+  /**
+   * TOTP 상태 확인
+   * - 시크릿 없으면 → setup (최초 등록)
+   * - 시크릿 있으면 → verify (코드 입력)
+   */
+  async function checkTOTPStatus() {
+    try {
+      const result = await api.adminVerifyTOTP('');
+      // 시크릿이 없으면 needSetup: true + 시크릿 반환
+      if (result.needSetup) {
+        setSecret(result.secret || '');
+        setStep('setup');
+      }
+    } catch (e: any) {
+      // TOTP code required = 이미 설정됨, 코드 입력 필요
+      if (e.message?.includes('TOTP code required') || e.message?.includes('Invalid')) {
+        setStep('verify');
+      } else {
+        setStep('verify');
+      }
+    }
+  }
+
+  /**
+   * TOTP 코드 검증 → 성공 시 관리자 페이지로 이동
+   */
+  async function handleVerify() {
+    if (code.length !== 6) {
+      toast({ message: '6자리 코드를 입력하세요', type: 'warning' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await api.adminVerifyTOTP(code);
+      if (result.success) {
+        // 세션 토큰 저장
+        await api.setAdminSession(result.adminSession || '');
+        toast({ message: '관리자 인증 완료', type: 'success' });
+        navigate(ROUTES.admin, { replace: true });
+      }
+    } catch (e: any) {
+      toast({ message: e.message || '인증 실패', type: 'error' });
+      setCode('');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!user || user.plan !== 'admin') return null;
+
+  /** 최초 설정 화면 — 시크릿을 Authenticator에 등록 */
+  if (step === 'setup') {
+    return (
+      <ScrollView className="flex-1 bg-brand-background">
+        <Container className="py-12 items-center">
+          <Text className="text-3xl mb-4">🔐</Text>
+          <Text className="text-brand-text text-xl font-bold text-center mb-2">관리자 2차 인증 설정</Text>
+          <Text className="text-brand-muted text-sm text-center mb-8">
+            Google Authenticator에 아래 키를 등록하세요
+          </Text>
+
+          {/* 시크릿 키 표시 */}
+          <Card variant="highlight" className="w-full p-6 mb-6">
+            <Text className="text-brand-muted text-xs mb-2">시크릿 키 (Authenticator에 입력)</Text>
+            <Text className="text-brand-text text-lg font-bold text-center tracking-wider" selectable>
+              {secret}
+            </Text>
+          </Card>
+
+          {/* 등록 방법 안내 */}
+          <Card className="w-full p-5 mb-8">
+            <Text className="text-brand-text text-sm font-bold mb-3">등록 방법</Text>
+            <View className="gap-2">
+              <Text className="text-brand-muted text-sm">1. Google Authenticator 앱 열기</Text>
+              <Text className="text-brand-muted text-sm">2. + 버튼 → "설정 키 입력"</Text>
+              <Text className="text-brand-muted text-sm">3. 계정: SideForge Admin</Text>
+              <Text className="text-brand-muted text-sm">4. 키: 위의 시크릿 키 붙여넣기</Text>
+              <Text className="text-brand-muted text-sm">5. 시간 기반 선택 → 추가</Text>
+            </View>
+          </Card>
+
+          {/* 등록 후 코드 입력 */}
+          <Text className="text-brand-text text-sm font-bold mb-3">등록 후 생성된 6자리 코드 입력</Text>
+          <Input
+            placeholder="000000"
+            value={code}
+            onChangeText={(t) => setCode(t.replace(/[^0-9]/g, '').slice(0, 6))}
+            keyboardType="number-pad"
+            className="w-full mb-4"
+            onSubmitEditing={handleVerify}
+            returnKeyType="done"
+          />
+          <Button title="인증 완료" onPress={handleVerify} loading={loading} className="w-full" />
+        </Container>
+      </ScrollView>
+    );
+  }
+
+  /** 코드 입력 화면 (이미 등록된 경우) */
+  return (
+    <ScrollView className="flex-1 bg-brand-background">
+      <Container className="py-12 items-center">
+        <Text className="text-3xl mb-4">🔐</Text>
+        <Text className="text-brand-text text-xl font-bold text-center mb-2">관리자 2차 인증</Text>
+        <Text className="text-brand-muted text-sm text-center mb-8">
+          Google Authenticator의 6자리 코드를 입력하세요
+        </Text>
+
+        <Input
+          placeholder="000000"
+          value={code}
+          onChangeText={(t) => setCode(t.replace(/[^0-9]/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          className="w-full mb-6"
+          onSubmitEditing={handleVerify}
+          returnKeyType="done"
+        />
+
+        <Button title="인증" onPress={handleVerify} loading={loading} className="w-full" />
+
+        <Text className="text-brand-muted text-xs mt-6 text-center">
+          코드는 30초마다 갱신됩니다
+        </Text>
+      </Container>
+    </ScrollView>
+  );
+}

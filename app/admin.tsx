@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
 import { Container, Card, Section, Badge, Button, Loading } from '../src/components/ui';
@@ -12,20 +13,30 @@ export default function AdminScreen() {
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  /** 관리자 플랜 시뮬레이션 — 선택한 플랜으로 리포트를 확인 가능 */
   const [simulatePlan, setLocalPlan] = useState<string>('admin');
 
-  /**
-   * admin 권한 확인 — 렌더링 중 navigate 방지
-   */
   useEffect(() => {
     if (user && user.plan !== 'admin') {
       navigate(ROUTES.landing, { replace: true });
+      return;
+    }
+    if (user?.plan === 'admin') {
+      checkAdminSession();
     }
   }, [user]);
-  useEffect(() => {
-    if (user?.plan === 'admin') loadAdminData();
-  }, [user]);
+
+  /**
+   * 관리자 2FA 세션 확인
+   * 세션 없거나 만료 → admin-verify로 이동
+   */
+  async function checkAdminSession() {
+    const session = await AsyncStorage.getItem('admin_session');
+    if (!session) {
+      navigate('/admin-verify', { replace: true });
+      return;
+    }
+    loadAdminData();
+  }
 
   async function loadAdminData() {
     try {

@@ -70,11 +70,33 @@ export default function ReportScreen() {
 
         {/* 영상별 조회수 그래프 (Plus 이상) */}
         {data.videos?.length > 0 && (
-          <Section title="영상별 조회수" icon="📊" className="mb-4">
-            <BarChart
-              data={data.videos.slice(0, 5).map((v: any) => ({ label: v.title, value: v.views }))}
-              maxItems={5}
-            />
+          <Section title="최근 영상 성과" icon="📊" className="mb-4">
+            <View className="gap-3">
+              {data.videos.slice(0, 3).map((v: any, i: number) => (
+                <Card key={i} variant="glass" className="p-4">
+                  <Text
+                    className="text-brand-primary-light text-sm font-bold mb-2"
+                    onPress={() => (window as any).open?.(`https://youtube.com/watch?v=${v.id}`, '_blank')}
+                  >
+                    {v.title} ↗
+                  </Text>
+                  <View className="flex-row gap-4">
+                    <View>
+                      <Text className="text-brand-muted text-xs">조회수</Text>
+                      <Text className="text-brand-text text-sm font-bold">{v.views?.toLocaleString()}</Text>
+                    </View>
+                    <View>
+                      <Text className="text-brand-muted text-xs">좋아요</Text>
+                      <Text className="text-brand-text text-sm font-bold">{v.likes?.toLocaleString()}</Text>
+                    </View>
+                    <View>
+                      <Text className="text-brand-muted text-xs">댓글</Text>
+                      <Text className="text-brand-text text-sm font-bold">{v.comments?.toLocaleString()}</Text>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </View>
           </Section>
         )}
 
@@ -96,8 +118,8 @@ export default function ReportScreen() {
           )}
         </Section>
 
-        {/* 약점 */}
-        <Section title="개선 필요" icon="⚠️" className="mb-4">
+        {/* 단점 */}
+        <Section title="단점" icon="⚠️" className="mb-4">
           {analysis.weaknesses?.length > 0 ? (
             <View className="gap-3">
               {analysis.weaknesses.map((w: string, i: number) => (

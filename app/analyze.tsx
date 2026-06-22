@@ -1,26 +1,36 @@
 import { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
-import { Container, Button, Input, Card, Loading, AdBanner } from '../src/components/ui';
+import { Container, Button, Input, Card, Badge, Loading, AdBanner } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 import { toast } from '../src/lib';
 
+const PLATFORMS = [
+  { id: 'youtube', icon: '▶️', name: 'YouTube', available: true, placeholder: 'https://youtube.com/@채널명', hint: 'youtube.com/@채널 또는 youtube.com/channel/UC...' },
+  { id: 'blog', icon: '📝', name: 'Blog', available: false, placeholder: 'https://blog.naver.com/아이디', hint: '네이버, 티스토리, Medium, WordPress, Velog' },
+  { id: 'instagram', icon: '📸', name: 'Instagram', available: false, placeholder: 'https://instagram.com/아이디', hint: 'instagram.com/아이디' },
+];
+
 export default function AnalyzeScreen() {
-  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
+  const [platform, setPlatform] = useState('youtube');
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const selected = PLATFORMS.find(p => p.id === platform)!;
+
   async function handleAnalyze() {
     if (!url.trim()) {
-      toast({ message: 'YouTube URL을 입력하세요', type: 'warning' });
+      toast({ message: 'URL을 입력하세요', type: 'warning' });
       return;
     }
-
     if (!user) {
       navigate(ROUTES.auth);
+      return;
+    }
+    if (!selected.available) {
+      toast({ message: `${selected.name}은 준비 중입니다. 곧 출시됩니다!`, type: 'info' });
       return;
     }
 
@@ -41,43 +51,66 @@ export default function AnalyzeScreen() {
 
   return (
     <ScrollView className="flex-1 bg-brand-background">
-      <Container className="py-16 items-center">
+      <Container className="py-16">
         <Text className="text-brand-text text-3xl font-bold text-center mb-3">채널 분석하기</Text>
         <Text className="text-brand-muted text-sm text-center mb-10">
-          YouTube 채널 URL을 입력하면{'\n'}AI가 성장 전략을 분석해드립니다
+          분석할 플랫폼을 선택하고 URL을 입력하세요
         </Text>
 
+        {/* 플랫폼 선택 */}
+        <View className="flex-row gap-3 mb-8">
+          {PLATFORMS.map((p) => (
+            <Pressable
+              key={p.id}
+              onPress={() => setPlatform(p.id)}
+              className={`flex-1 p-4 rounded-2xl border items-center ${platform === p.id ? 'border-brand-primary bg-brand-primary/10' : 'border-brand-border bg-brand-surface'}`}
+            >
+              <Text className="text-2xl mb-2">{p.icon}</Text>
+              <Text className={`text-xs font-bold ${platform === p.id ? 'text-brand-primary' : 'text-brand-muted'}`}>{p.name}</Text>
+              {!p.available && <Badge label="Soon" variant="muted" className="mt-1" />}
+            </Pressable>
+          ))}
+        </View>
+
+        {/* URL 입력 */}
         <Input
-          placeholder="https://youtube.com/@채널명"
+          placeholder={selected.placeholder}
           value={url}
           onChangeText={setUrl}
-          className="w-full mb-6"
+          hint={selected.hint}
+          className="mb-6"
         />
 
         <Button title="분석 시작 🔍" onPress={handleAnalyze} size="lg" className="w-full mb-6" />
 
+        {/* 플랜 정보 */}
         {user && (
-          <Card variant="glass" className="w-full">
-            <View className="flex-row justify-between">
-              <Text className="text-brand-muted text-sm">남은 분석 횟수</Text>
-              <Text className="text-brand-text text-sm font-bold">
-                {user.plan === 'pro' ? '무제한' : `${Math.max(0, (user.plan === 'plus' ? 30 : 3) - user.analysisCount)}회`}
-              </Text>
+          <Card variant="glass" className="mb-6">
+            <View className="flex-row justify-between items-center">
+              <View>
+                <Text className="text-brand-muted text-xs">현재 플랜</Text>
+                <Text className="text-brand-text text-sm font-bold mt-0.5">{user.plan.toUpperCase()}</Text>
+              </View>
+              <View className="items-end">
+                <Text className="text-brand-muted text-xs">남은 분석</Text>
+                <Text className="text-brand-text text-sm font-bold mt-0.5">
+                  {user.plan === 'pro' || user.plan === 'admin' ? '무제한' : `${Math.max(0, (user.plan === 'plus' ? 30 : 3) - user.analysisCount)}회`}
+                </Text>
+              </View>
             </View>
           </Card>
         )}
 
-        {/* 지원 플랫폼 안내 */}
-        <View className="mt-10 w-full">
-          <Text className="text-brand-muted text-xs text-center mb-4">지원 URL 형식</Text>
-          <View className="gap-2">
-            <Text className="text-brand-muted text-xs">• https://youtube.com/@채널이름</Text>
-            <Text className="text-brand-muted text-xs">• https://youtube.com/channel/UCxxxxxx</Text>
-          </View>
-        </View>
+        {!user && (
+          <Card variant="highlight" className="items-center p-6 mb-6">
+            <Text className="text-brand-text text-sm font-bold mb-2">로그인하고 무료 분석 시작</Text>
+            <Text className="text-brand-muted text-xs mb-3">가입하면 월 3회 무료 분석 가능</Text>
+            <Button title="로그인 / 회원가입" size="sm" onPress={() => navigate(ROUTES.auth)} />
+          </Card>
+        )}
 
         {/* 광고 */}
-        <AdBanner slot="analyze-bottom" className="mt-10" />
+        <AdBanner slot="analyze-bottom" className="mt-4" />
       </Container>
     </ScrollView>
   );

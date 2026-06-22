@@ -4,6 +4,8 @@ export const ROUTES = {
   landing: '/',
   auth: '/auth',
   analyze: '/analyze',
+  mypage: '/mypage',
+  contact: '/contact',
   pricing: '/pricing',
   terms: '/terms',
   privacy: '/privacy',

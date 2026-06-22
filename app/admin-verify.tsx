@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Image } from 'react-native';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
 import { Container, Card, Button, Input, Badge } from '../src/components/ui';
@@ -93,10 +93,16 @@ export default function AdminVerifyScreen() {
             Google Authenticator에 아래 키를 등록하세요
           </Text>
 
-          {/* 시크릿 키 표시 */}
-          <Card variant="highlight" className="w-full p-6 mb-6">
-            <Text className="text-brand-muted text-xs mb-2">시크릿 키 (Authenticator에 입력)</Text>
-            <Text className="text-brand-text text-lg font-bold text-center tracking-wider" selectable>
+          {/* QR코드 + 시크릿 키 표시 */}
+          <Card variant="highlight" className="w-full p-6 mb-6 items-center">
+            <Text className="text-brand-muted text-xs mb-3">Authenticator 앱에서 QR 스캔</Text>
+            <Image
+              source={{ uri: `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(`otpauth://totp/SideForge:${user.email}?secret=${secret}&issuer=SideForge`)}` }}
+              style={{ width: 200, height: 200 }}
+              className="mb-4"
+            />
+            <Text className="text-brand-muted text-xs mb-1">또는 직접 입력:</Text>
+            <Text className="text-brand-text text-sm font-bold text-center tracking-wider" selectable>
               {secret}
             </Text>
           </Card>

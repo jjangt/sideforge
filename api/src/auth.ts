@@ -18,12 +18,12 @@ const getAdminEmails = (env: any): string[] =>
 export async function handleSignup(request: Request, env: Env): Promise<Response> {
   const { email, password, name } = await request.json() as { email: string; password: string; name?: string };
 
-  if (!email || !password) return json({ error: 'email and password required' }, 400);
-  if (password.length < 8) return json({ error: 'Password must be at least 8 characters' }, 400);
-  if (!isValidEmail(email)) return json({ error: 'Invalid email format' }, 400);
+  if (!email || !password) return json({ error: '이메일과 비밀번호를 입력해주세요' }, 400);
+  if (password.length < 8) return json({ error: '비밀번호는 8자 이상이어야 합니다' }, 400);
+  if (!isValidEmail(email)) return json({ error: '올바른 이메일 형식을 입력해주세요' }, 400);
 
   const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
-  if (existing) return json({ error: 'Email already exists' }, 409);
+  if (existing) return json({ error: '이미 가입된 이메일입니다' }, 409);
 
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password, env.PASSWORD_SALT || 'sideforge-salt');
@@ -41,13 +41,13 @@ export async function handleSignup(request: Request, env: Env): Promise<Response
 export async function handleLogin(request: Request, env: Env): Promise<Response> {
   const { email, password } = await request.json() as { email: string; password: string };
 
-  if (!email || !password) return json({ error: 'email and password required' }, 400);
+  if (!email || !password) return json({ error: '이메일과 비밀번호를 입력해주세요' }, 400);
 
   const user = await env.DB.prepare('SELECT * FROM users WHERE email = ? AND provider = ?').bind(email, 'email').first() as any;
-  if (!user) return json({ error: 'Invalid credentials' }, 401);
+  if (!user) return json({ error: '이메일 또는 비밀번호를 확인해주세요' }, 401);
 
   const valid = await verifyPassword(password, user.password_hash, env.PASSWORD_SALT || 'sideforge-salt');
-  if (!valid) return json({ error: 'Invalid credentials' }, 401);
+  if (!valid) return json({ error: '이메일 또는 비밀번호를 확인해주세요' }, 401);
 
   const token = await createToken(user.id, user.email, user.plan, env);
   return json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, analysisCount: user.analysis_count } });

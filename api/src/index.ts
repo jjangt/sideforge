@@ -107,7 +107,7 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
   if (!channelId) return json({ error: 'Invalid YouTube URL' }, 400);
 
   const channelData = await fetchChannelData(channelId, env.YOUTUBE_API_KEY);
-  const videos = await fetchRecentVideos(channelId, env.YOUTUBE_API_KEY);
+  const videos = await fetchRecentVideos(channelData.id, env.YOUTUBE_API_KEY);
   const analysis = await analyzeWithAI(env.AI, channelData, videos);
 
   const reportId = crypto.randomUUID();

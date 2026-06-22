@@ -1,3 +1,16 @@
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT DEFAULT '',
+  name TEXT DEFAULT '',
+  plan TEXT DEFAULT 'free',
+  analysis_count INTEGER DEFAULT 0,
+  provider TEXT DEFAULT 'email',
+  avatar TEXT DEFAULT '',
+  created_at TEXT NOT NULL
+);
+
 -- Reports table
 CREATE TABLE IF NOT EXISTS reports (
   id TEXT PRIMARY KEY,
@@ -9,18 +22,8 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at TEXT NOT NULL
 );
 
--- Users table (Phase 1 auth)
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  password_hash TEXT,
-  name TEXT,
-  plan TEXT DEFAULT 'free',
-  analysis_count INTEGER DEFAULT 0,
-  created_at TEXT NOT NULL
-);
-
--- Index for fast lookups
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_reports_user ON reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_channel ON reports(channel_id);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);

@@ -1,23 +1,24 @@
 import { View, Text, ScrollView } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { Container, Button, Card, Badge } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 
 export default function LandingScreen() {
-  const { t } = useTranslation();
-
   return (
     <ScrollView className="flex-1 bg-brand-background">
       {/* Hero */}
       <Container className="pt-24 pb-16 items-center">
-        <Badge label="✨ AI 채널 분석 플랫폼" variant="primary" className="mb-8" />
+        <Badge label="✨ AI 콘텐츠 성장 파트너" variant="primary" className="mb-8" />
 
         <Text className="text-5xl font-bold text-brand-text text-center mb-5">
           SideForge
         </Text>
 
-        <Text className="text-lg text-brand-muted text-center leading-8 mb-12">
-          YouTube URL만 입력하면{'\n'}AI가 성장 전략을 분석해드립니다
+        <Text className="text-lg text-brand-muted text-center leading-8 mb-4">
+          당신의 채널을 AI가 분석하고{'\n'}구체적인 성장 액션을 제안합니다
+        </Text>
+
+        <Text className="text-sm text-brand-primary-light text-center mb-12">
+          YouTube · Blog · Instagram 통합 분석
         </Text>
 
         <Button
@@ -30,39 +31,75 @@ export default function LandingScreen() {
         <Text className="text-brand-muted text-sm mt-4">가입 후 3회 무료 분석</Text>
       </Container>
 
-      {/* How it works */}
+      {/* What We Do */}
       <Container className="pb-12">
-        <Text className="text-brand-text text-xl font-bold text-center mb-8">어떻게 동작하나요?</Text>
+        <Text className="text-brand-text text-xl font-bold text-center mb-3">숫자가 아닌, 액션을 드립니다</Text>
+        <Text className="text-brand-muted text-sm text-center mb-8">
+          기존 도구는 조회수만 보여줍니다.{'\n'}SideForge는 "왜 안 되는지"와 "어떻게 고칠지"를 알려드립니다.
+        </Text>
         <View className="gap-4">
-          <StepCard step="1" title="URL 입력" desc="분석할 YouTube 채널 URL을 붙여넣기" />
-          <StepCard step="2" title="AI 분석" desc="AI가 채널 데이터를 수집하고 패턴을 분석" />
-          <StepCard step="3" title="액션 제안" desc="구체적인 개선 방법과 콘텐츠 아이디어 제공" />
+          <FeatureCard icon="🔍" title="채널 분석" desc="URL 하나로 콘텐츠, 반응, 성장 추세를 종합 분석" />
+          <FeatureCard icon="🎯" title="개선 액션 제안" desc="지금 바로 실행할 수 있는 구체적 개선 방법 제공" />
+          <FeatureCard icon="📊" title="벤치마킹" desc="같은 카테고리 인기 채널과 비교하여 차이점 분석" />
+          <FeatureCard icon="💡" title="콘텐츠 제안" desc="AI가 다음에 만들면 좋을 콘텐츠 주제 추천" />
         </View>
       </Container>
 
-      {/* Differentiator */}
+      {/* How it works */}
       <Container className="pb-12">
-        <Text className="text-brand-text text-xl font-bold text-center mb-8">기존 도구와 뭐가 다른가요?</Text>
+        <Text className="text-brand-text text-xl font-bold text-center mb-8">3단계로 끝</Text>
         <View className="gap-4">
-          <FeatureCard icon="📊" title="숫자가 아닌 액션" desc="조회수만 보여주는 게 아니라, '왜'와 '어떻게'를 알려드립니다" />
-          <FeatureCard icon="🤖" title="AI 기반 피드백" desc="잘 되는 채널과 비교 분석하여 구체적 개선점 제안" />
-          <FeatureCard icon="⚡" title="30초면 끝" desc="URL 입력 하나로 즉시 분석, 복잡한 설정 불필요" />
+          <StepCard step="1" title="URL 입력" desc="분석할 채널 URL을 붙여넣기" />
+          <StepCard step="2" title="AI 분석" desc="AI가 데이터를 수집하고 패턴을 분석 (30초)" />
+          <StepCard step="3" title="리포트 확인" desc="점수, 강점, 약점, 개선 액션, 추천 콘텐츠 확인" />
+        </View>
+      </Container>
+
+      {/* Supported Platforms */}
+      <Container className="pb-12">
+        <Text className="text-brand-text text-xl font-bold text-center mb-8">지원 플랫폼</Text>
+        <View className="gap-3">
+          <PlatformCard icon="▶️" name="YouTube" status="available" desc="채널 분석, 영상별 피드백, 댓글 분석" />
+          <PlatformCard icon="📝" name="Blog" status="coming" desc="네이버 블로그, 티스토리 분석" />
+          <PlatformCard icon="📸" name="Instagram" status="coming" desc="피드 분석, 해시태그 전략, 참여율" />
         </View>
       </Container>
 
       {/* Pricing Preview */}
+      <Container className="pb-12">
+        <Text className="text-brand-text text-xl font-bold text-center mb-8">가격</Text>
+        <View className="gap-3">
+          <PricingCard plan="Free" price="₩0" features={['3회 분석 (평생)', 'YouTube 기본 리포트', '점수 + 요약']} />
+          <PricingCard plan="Plus" price="₩9,900/월" features={['30회/월 분석', 'YouTube + Blog', '상세 리포트 + 추천 콘텐츠', '광고 없음']} highlight />
+          <PricingCard plan="Pro" price="₩29,900/월" features={['무제한 분석', '전체 플랫폼', '댓글 분석 + 경쟁사 비교', '정기 모니터링 + 광고 없음']} />
+        </View>
+      </Container>
+
+      {/* CTA */}
       <Container className="pb-24 items-center">
         <Card className="w-full items-center p-8">
-          <Text className="text-3xl mb-3">🏷️</Text>
-          <Text className="text-brand-text text-base font-bold text-center">
-            무료로 시작, 필요할 때 업그레이드
+          <Text className="text-3xl mb-3">🚀</Text>
+          <Text className="text-brand-text text-base font-bold text-center mb-4">
+            지금 바로 내 채널을 분석해보세요
           </Text>
-          <Text className="text-brand-muted text-sm mt-2 text-center">
-            Free 3회 · Plus ₩9,900/월 · Pro ₩29,900/월
-          </Text>
+          <Button title="무료로 시작하기" onPress={() => navigate(ROUTES.analyze)} className="w-full" />
         </Card>
       </Container>
     </ScrollView>
+  );
+}
+
+function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+  return (
+    <Card className="flex-row items-start gap-4">
+      <View className="w-12 h-12 bg-brand-primary/10 rounded-xl items-center justify-center">
+        <Text className="text-2xl">{icon}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-brand-text font-bold text-base mb-1">{title}</Text>
+        <Text className="text-brand-muted text-sm leading-6">{desc}</Text>
+      </View>
+    </Card>
   );
 }
 
@@ -80,15 +117,33 @@ function StepCard({ step, title, desc }: { step: string; title: string; desc: st
   );
 }
 
-function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+function PlatformCard({ icon, name, status, desc }: { icon: string; name: string; status: 'available' | 'coming'; desc: string }) {
   return (
-    <Card className="flex-row items-start gap-4">
-      <View className="w-12 h-12 bg-brand-primary/10 rounded-xl items-center justify-center">
-        <Text className="text-2xl">{icon}</Text>
-      </View>
+    <Card className="flex-row items-center gap-4">
+      <Text className="text-2xl">{icon}</Text>
       <View className="flex-1">
-        <Text className="text-brand-text font-bold text-base mb-1">{title}</Text>
-        <Text className="text-brand-muted text-sm leading-6">{desc}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-brand-text font-bold">{name}</Text>
+          <Badge label={status === 'available' ? '이용 가능' : 'Coming Soon'} variant={status === 'available' ? 'success' : 'muted'} />
+        </View>
+        <Text className="text-brand-muted text-sm mt-1">{desc}</Text>
+      </View>
+    </Card>
+  );
+}
+
+function PricingCard({ plan, price, features, highlight }: { plan: string; price: string; features: string[]; highlight?: boolean }) {
+  return (
+    <Card variant={highlight ? 'highlight' : 'default'} className="p-6">
+      <Text className="text-brand-text font-bold text-lg">{plan}</Text>
+      <Text className="text-brand-primary font-bold text-xl mt-1">{price}</Text>
+      <View className="mt-3 gap-2">
+        {features.map((f, i) => (
+          <View key={i} className="flex-row items-start gap-2">
+            <Text className="text-brand-success text-sm">✓</Text>
+            <Text className="text-brand-muted text-sm flex-1">{f}</Text>
+          </View>
+        ))}
       </View>
     </Card>
   );

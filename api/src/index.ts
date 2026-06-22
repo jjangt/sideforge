@@ -1,10 +1,12 @@
-import { handleSignup, handleLogin, handleMe, getUserIdFromRequest, checkAnalysisLimit, incrementAnalysisCount } from './auth';
+import { handleSignup, handleLogin, handleMe, handleGoogleAuth, getUserIdFromRequest, checkAnalysisLimit, incrementAnalysisCount } from './auth';
 
 export interface Env {
   AI: any;
   DB: D1Database;
   YOUTUBE_API_KEY: string;
   JWT_SECRET: string;
+  PASSWORD_SALT: string;
+  GOOGLE_CLIENT_ID: string;
   ENVIRONMENT: string;
 }
 
@@ -22,6 +24,7 @@ export default {
       // Auth
       if (path === '/api/auth/signup' && request.method === 'POST') return handleSignup(request, env);
       if (path === '/api/auth/login' && request.method === 'POST') return handleLogin(request, env);
+      if (path === '/api/auth/google' && request.method === 'POST') return handleGoogleAuth(request, env);
       if (path === '/api/auth/me' && request.method === 'GET') return handleMe(request, env);
 
       // YouTube Analysis (인증 필요)

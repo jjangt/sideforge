@@ -29,6 +29,11 @@ export default {
         const userId = await getUserIdFromRequest(request, env);
         if (!userId) return json({ error: 'Unauthorized' }, 401);
 
+        // 일일 전체 AI 사용량 제한 (무료 티어 보호)
+        const dailyKey = `daily_${new Date().toISOString().slice(0, 10)}`;
+        const dailyCount = Number((await env.DB.prepare('SELECT COUNT(*) as cnt FROM reports WHERE created_at LIKE ?').bind(`${new Date().toISOString().slice(0, 10)}%`).first() as any)?.cnt || 0);
+        if (dailyCount >= 280) return json({ error: 'Daily server limit reached. Try again tomorrow.', code: 'DAILY_LIMIT' }, 429);
+
         const { allowed, remaining } = await checkAnalysisLimit(userId, env);
         if (!allowed) return json({ error: 'Analysis limit reached', remaining: 0 }, 403);
 

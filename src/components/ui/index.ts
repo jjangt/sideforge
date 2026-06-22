@@ -12,3 +12,4 @@ export { ToastRenderer } from './ToastRenderer';
 export { ModalRenderer } from './ModalRenderer';
 export { AdBanner } from './AdBanner';
 export { Header } from './Header';
+export { BarChart, StatRow } from './Chart';

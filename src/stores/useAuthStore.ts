@@ -15,11 +15,14 @@ interface User {
 interface AuthState {
   user: User | null;
   isLoading: boolean;
+  /** 관리자 플랜 시뮬레이션 (기본: null = 실제 플랜 사용) */
+  simulatePlan: string | null;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  setSimulatePlan: (plan: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -27,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isLoading: false,
+      simulatePlan: null,
 
       signup: async (email, password, name) => {
         const { token, user } = await api.signup(email, password, name);
@@ -63,6 +67,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, isLoading: false });
         }
       },
+
+      setSimulatePlan: (plan) => set({ simulatePlan: plan }),
     }),
     {
       name: 'sideforge-auth',

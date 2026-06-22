@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/services/api';
-import { Container, Card, Section, Badge, Button, Loading, ProgressBar } from '../../src/components/ui';
+import { Container, Card, Section, Badge, Button, Loading, ProgressBar, BarChart, StatRow } from '../../src/components/ui';
 import { navigate, goBack, ROUTES } from '../../src/lib';
 
 export default function ReportScreen() {
@@ -56,6 +56,16 @@ export default function ReportScreen() {
           <Badge label={scoreLabel(analysis.score)} variant={scoreVariant(analysis.score)} />
           <Text className="text-brand-muted text-sm mt-3 text-center leading-6">{analysis.summary}</Text>
         </Card>
+
+        {/* 영상별 조회수 그래프 (Plus 이상) */}
+        {data.videos?.length > 0 && (
+          <Section title="영상별 조회수" icon="📊" className="mb-4">
+            <BarChart
+              data={data.videos.slice(0, 5).map((v: any) => ({ label: v.title, value: v.views }))}
+              maxItems={5}
+            />
+          </Section>
+        )}
 
         {/* 강점 */}
         <Section title="강점" icon="💪" className="mb-4">

@@ -20,6 +20,15 @@ export default function AnalyzeScreen() {
 
   const selected = PLATFORMS.find(p => p.id === platform)!;
 
+  /**
+   * 플랫폼 탭 변경 시 URL 입력값 초기화
+   * 이전 플랫폼 URL을 실수로 그대로 제출하는 것을 방지
+   */
+  function handlePlatformChange(newPlatform: string) {
+    setPlatform(newPlatform);
+    setUrl('');
+  }
+
   async function handleAnalyze() {
     if (!url.trim()) {
       toast({ message: 'URL을 입력하세요', type: 'warning' });
@@ -62,7 +71,7 @@ export default function AnalyzeScreen() {
           {PLATFORMS.map((p) => (
             <Pressable
               key={p.id}
-              onPress={() => setPlatform(p.id)}
+              onPress={() => handlePlatformChange(p.id)}
               className={`flex-1 p-4 rounded-2xl border items-center ${platform === p.id ? 'border-brand-primary bg-brand-primary/10' : 'border-brand-border bg-brand-surface'}`}
             >
               <Text className="text-2xl mb-2">{p.icon}</Text>

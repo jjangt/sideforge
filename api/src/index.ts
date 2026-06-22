@@ -52,7 +52,10 @@ export default {
         const userId = await getUserIdFromRequest(request, env);
         if (!userId) return json({ error: 'Unauthorized' }, 401);
         const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
-        return handleGetReport(reportId, user?.plan || 'free', env);
+        // 관리자 시뮬레이션: X-Simulate-Plan 헤더가 있으면 해당 플랜으로 필터링
+        const simulatePlan = request.headers.get('X-Simulate-Plan');
+        const effectivePlan = (user?.plan === 'admin' && simulatePlan) ? simulatePlan : (user?.plan || 'free');
+        return handleGetReport(reportId, effectivePlan, env);
       }
 
       // My Reports
@@ -105,11 +108,13 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
     'INSERT INTO reports (id, user_id, channel_id, channel_name, platform, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(reportId, userId, channelData.id, channelData.title, 'youtube', JSON.stringify(fullData), new Date().toISOString()).run();
 
-  // 플랜별 응답 필터링
+  // 플랜별 응답 필터링 (관리자 시뮬레이션 지원)
   const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
-  const filtered = filterByPlan(fullData, user?.plan || 'free');
+  const simulatePlan = request.headers.get('X-Simulate-Plan');
+  const effectivePlan = (user?.plan === 'admin' && simulatePlan) ? simulatePlan : (user?.plan || 'free');
+  const filtered = filterByPlan(fullData, effectivePlan);
 
-  return json({ reportId, ...filtered, plan: user?.plan || 'free' });
+  return json({ reportId, ...filtered, plan: effectivePlan });
 }
 
 async function handleGetReport(reportId: string, plan: string, env: Env): Promise<Response> {
@@ -243,7 +248,7 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
 async function analyzeWithAI(ai: any, channel: any, videos: any[]) {
   const topVideos = videos.slice(0, 10).map(v => `- "${v.title}" (조회수: ${v.views}, 좋아요: ${v.likes})`).join('\n');
 
-  const prompt = `당신은 YouTube 채널 성장 전문 컨설턴트입니다. 데이터 기반으로 분석하고 구체적 액션을 제안하세요.
+  const prompt = `당신은 YouTube 채널 성장 전문 컨설턴트입니다. 데이터 기반으로 엄격하게 분석하고 구체적 액션을 제안하세요.
 
 채널명: ${channel.title}
 구독자: ${channel.subscribers.toLocaleString()}명
@@ -254,8 +259,22 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[]) {
 최근 영상 성과:
 ${topVideos}
 
+■ 점수 기준 (엄격하게 적용):
+- 구독자: 100명 미만=10점, 1000명=30점, 1만=50점, 10만=75점, 100만=95점
+- 평균 조회수: 구독자 대비 10% 이상=양호, 50% 이상=우수
+- 업로드 빈도: 주 1회 이상=높음, 월 1회=보통, 그 이하=낮음
+- 영상 3개 + 구독자 1명 + 평균 300회 = 15~25점이 적절
+- 영상 10개 + 구독자 100명 + 평균 500회 = 25~35점
+- 영상 50개 + 구독자 1000명 + 평균 2000회 = 40~55점
+- 70점 이상은 구독자 1만 이상 + 꾸준한 업로드 + 높은 참여율일 때만 부여
+
+■ 벤치마크 채널 추천 규칙:
+- 반드시 실제 존재하는 YouTube 채널만 추천
+- 사용자 채널의 약점과 연결하여 추천 근거 작성
+- 형식: "당신의 채널은 [약점]이 있습니다. [추천 채널]은 [약점 극복 방법]을 통해 성공했으므로 참고하세요."
+
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만:
-{"score":0-100,"summary":"한줄요약","strengths":["강점1","강점2","강점3"],"weaknesses":["약점1","약점2","약점3"],"actions":["구체적 개선액션1","개선액션2","개선액션3"],"contentIdeas":["추천콘텐츠1","추천콘텐츠2","추천콘텐츠3"],"benchmarks":[{"name":"실제 존재하는 유사 성공 채널명","reason":"이 채널이 잘하는 점 설명","url":"youtube.com/@채널핸들"},{"name":"두번째 참고 채널","reason":"참고할 점","url":"youtube.com/@채널핸들"},{"name":"세번째 참고 채널","reason":"참고할 점","url":"youtube.com/@채널핸들"}]}
+{"score":0-100,"summary":"한줄요약","strengths":["강점1","강점2","강점3"],"weaknesses":["약점1","약점2","약점3"],"actions":["구체적 개선액션1","개선액션2","개선액션3"],"contentIdeas":["추천콘텐츠1","추천콘텐츠2","추천콘텐츠3"],"benchmarks":[{"name":"실제 채널명","reason":"당신의 채널은 [X]가 부족합니다. 이 채널은 [X를 극복한 방법]을 통해 성공했으므로 참고하세요.","url":"youtube.com/@핸들"},{"name":"두번째","reason":"근거","url":"youtube.com/@핸들"},{"name":"세번째","reason":"근거","url":"youtube.com/@핸들"}]}
 
 중요: benchmarks는 반드시 실제로 존재하는 YouTube 채널이어야 합니다. 가상의 채널을 만들지 마세요.`;
 

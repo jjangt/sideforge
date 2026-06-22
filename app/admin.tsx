@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
 import { Container, Card, Section, Badge, Button, Loading } from '../src/components/ui';
@@ -8,16 +8,23 @@ import { toKSTDisplay } from '../src/utils/time';
 
 export default function AdminScreen() {
   const user = useAuthStore((s) => s.user);
+  const setSimulatePlan = useAuthStore((s) => s.setSimulatePlan);
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  /** 관리자 플랜 시뮬레이션 — 선택한 플랜으로 리포트를 확인 가능 */
+  const [simulatePlan, setLocalPlan] = useState<string>('admin');
 
+  /**
+   * admin 권한 확인 — 렌더링 중 navigate 방지
+   */
   useEffect(() => {
-    if (user?.plan !== 'admin') {
+    if (user && user.plan !== 'admin') {
       navigate(ROUTES.landing, { replace: true });
-      return;
     }
-    loadAdminData();
+  }, [user]);
+  useEffect(() => {
+    if (user?.plan === 'admin') loadAdminData();
   }, [user]);
 
   async function loadAdminData() {
@@ -43,6 +50,36 @@ export default function AdminScreen() {
       <Container className="py-12">
         <Text className="text-brand-text text-2xl font-bold mb-2">관리자 대시보드</Text>
         <Text className="text-brand-muted text-sm mb-8">서비스 현황을 한눈에 확인하세요.</Text>
+
+        {/* 플랜 시뮬레이션 */}
+        <Section title="플랜 시뮬레이션" icon="🔍" className="mb-6">
+          <Text className="text-brand-muted text-xs mb-3">
+            라이선스별 사용자 화면을 테스트할 수 있습니다. 선택 후 분석하면 해당 플랜으로 결과가 보입니다.
+          </Text>
+          <View className="flex-row gap-2">
+            {['admin', 'free', 'plus', 'pro'].map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => {
+                  setLocalPlan(p);
+                  setSimulatePlan(p === 'admin' ? null : p);
+                }}
+                className={`flex-1 py-2 rounded-xl items-center border ${simulatePlan === p ? 'border-brand-primary bg-brand-primary/10' : 'border-brand-border'}`}
+              >
+                <Text className={`text-xs font-bold ${simulatePlan === p ? 'text-brand-primary' : 'text-brand-muted'}`}>
+                  {p.toUpperCase()}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {simulatePlan !== 'admin' && (
+            <View className="mt-3 bg-brand-warning/10 p-3 rounded-xl">
+              <Text className="text-brand-warning text-xs">
+                ⚠️ 현재 "{simulatePlan.toUpperCase()}" 모드로 시뮬레이션 중. 분석 시 해당 플랜의 제한된 결과가 보입니다.
+              </Text>
+            </View>
+          )}
+        </Section>
 
         {/* 통계 카드 */}
         {stats && (

@@ -10,6 +10,15 @@ export default function MyPageScreen() {
   const { user, logout } = useAuthStore();
   const [reports, setReports] = useState<any[]>([]);
 
+  /**
+   * 로그인 상태 확인 — 렌더링 중 navigate 호출 방지를 위해 useEffect 사용
+   */
+  useEffect(() => {
+    if (!user) {
+      navigate(ROUTES.auth, { replace: true });
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) loadReports();
   }, [user]);
@@ -21,10 +30,7 @@ export default function MyPageScreen() {
     } catch {}
   }
 
-  if (!user) {
-    navigate(ROUTES.auth, { replace: true });
-    return null;
-  }
+  if (!user) return null;
 
   const remaining = user.plan === 'pro' || user.plan === 'admin'
     ? '무제한'

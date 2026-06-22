@@ -55,4 +55,8 @@ export const api = {
   getReport: (reportId: string) => request<any>(`/api/report/${reportId}`),
 
   getMyReports: () => request<{ reports: any[] }>('/api/reports'),
+
+  // Admin
+  adminStats: () => request<{ todayReports: number; totalUsers: number; totalReports: number }>('/api/admin/stats'),
+  adminUsers: () => request<{ users: any[] }>('/api/admin/users'),
 };

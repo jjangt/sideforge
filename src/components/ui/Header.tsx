@@ -22,6 +22,11 @@ export function Header() {
             <Pressable onPress={() => navigate(ROUTES.mypage)}>
               <Text className="text-brand-muted text-sm">마이페이지</Text>
             </Pressable>
+            {user.plan === 'admin' && (
+              <Pressable onPress={() => navigate(ROUTES.admin)}>
+                <Text className="text-brand-warning text-sm">관리자</Text>
+              </Pressable>
+            )}
             <View className="bg-brand-primary/20 px-2 py-1 rounded-full">
               <Text className="text-brand-primary-light text-xs font-medium">{user.plan.toUpperCase()}</Text>
             </View>

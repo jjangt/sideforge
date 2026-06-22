@@ -62,6 +62,23 @@ export default {
         return handleMyReports(userId, env);
       }
 
+      // Admin APIs
+      if (path === '/api/admin/stats' && request.method === 'GET') {
+        const userId = await getUserIdFromRequest(request, env);
+        if (!userId) return json({ error: 'Unauthorized' }, 401);
+        const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
+        if (user?.plan !== 'admin') return json({ error: 'Forbidden' }, 403);
+        return handleAdminStats(env);
+      }
+
+      if (path === '/api/admin/users' && request.method === 'GET') {
+        const userId = await getUserIdFromRequest(request, env);
+        if (!userId) return json({ error: 'Unauthorized' }, 401);
+        const user = await env.DB.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first() as any;
+        if (user?.plan !== 'admin') return json({ error: 'Forbidden' }, 403);
+        return handleAdminUsers(env);
+      }
+
       return json({ error: 'Not found' }, 404);
     } catch (e: any) {
       return json({ error: e.message || 'Internal error' }, 500);
@@ -141,6 +158,21 @@ function filterByPlan(data: any, plan: string): any {
 async function handleMyReports(userId: string, env: Env): Promise<Response> {
   const results = await env.DB.prepare('SELECT id, channel_name, platform, created_at FROM reports WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').bind(userId).all();
   return json({ reports: results.results });
+}
+
+// ─── Admin ─────────────────────────────────────────────────────────────────────
+
+async function handleAdminStats(env: Env): Promise<Response> {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayReports = Number((await env.DB.prepare('SELECT COUNT(*) as cnt FROM reports WHERE created_at LIKE ?').bind(`${today}%`).first() as any)?.cnt || 0);
+  const totalUsers = Number((await env.DB.prepare('SELECT COUNT(*) as cnt FROM users').first() as any)?.cnt || 0);
+  const totalReports = Number((await env.DB.prepare('SELECT COUNT(*) as cnt FROM reports').first() as any)?.cnt || 0);
+  return json({ todayReports, totalUsers, totalReports });
+}
+
+async function handleAdminUsers(env: Env): Promise<Response> {
+  const results = await env.DB.prepare('SELECT id, email, name, plan, analysis_count, provider, created_at FROM users ORDER BY created_at DESC LIMIT 100').all();
+  return json({ users: results.results });
 }
 
 // ─── YouTube Data API ─────────────────────────────────────────────────────────

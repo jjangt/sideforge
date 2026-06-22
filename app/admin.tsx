@@ -1,0 +1,100 @@
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { useAuthStore } from '../src/stores/useAuthStore';
+import { api } from '../src/services/api';
+import { Container, Card, Section, Badge, Button, Loading } from '../src/components/ui';
+import { navigate, ROUTES } from '../src/lib';
+import { toKSTDisplay } from '../src/utils/time';
+
+export default function AdminScreen() {
+  const user = useAuthStore((s) => s.user);
+  const [stats, setStats] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.plan !== 'admin') {
+      navigate(ROUTES.landing, { replace: true });
+      return;
+    }
+    loadAdminData();
+  }, [user]);
+
+  async function loadAdminData() {
+    try {
+      const [statsData, usersData] = await Promise.all([
+        api.adminStats(),
+        api.adminUsers(),
+      ]);
+      setStats(statsData);
+      setUsers(usersData.users || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) return <Loading message="관리자 데이터 로딩..." />;
+  if (user?.plan !== 'admin') return null;
+
+  return (
+    <ScrollView className="flex-1 bg-brand-background">
+      <Container className="py-12">
+        <Text className="text-brand-text text-2xl font-bold mb-2">관리자 대시보드</Text>
+        <Text className="text-brand-muted text-sm mb-8">서비스 현황을 한눈에 확인하세요.</Text>
+
+        {/* 통계 카드 */}
+        {stats && (
+          <View className="flex-row gap-3 mb-6">
+            <StatCard label="오늘 분석" value={`${stats.todayReports}건`} />
+            <StatCard label="전체 사용자" value={`${stats.totalUsers}명`} />
+            <StatCard label="전체 리포트" value={`${stats.totalReports}건`} />
+          </View>
+        )}
+
+        {/* AI 사용량 */}
+        {stats && (
+          <Section title="AI 사용량 (일일)" icon="🤖" className="mb-4">
+            <View className="flex-row justify-between items-center">
+              <Text className="text-brand-muted text-sm">오늘 사용</Text>
+              <Text className="text-brand-text text-sm font-bold">{stats.todayReports} / 280 건</Text>
+            </View>
+            <View className="h-2 bg-brand-surface-light rounded-full mt-2 overflow-hidden">
+              <View className="h-full bg-brand-primary rounded-full" style={{ width: `${Math.min(100, (stats.todayReports / 280) * 100)}%` }} />
+            </View>
+            <Text className="text-brand-muted text-xs mt-1">무료 티어 한도: 일일 280건</Text>
+          </Section>
+        )}
+
+        {/* 사용자 목록 */}
+        <Section title="사용자 목록" icon="👥" className="mb-4">
+          {users.length === 0 ? (
+            <Text className="text-brand-muted text-sm">사용자 없음</Text>
+          ) : (
+            <View className="gap-2">
+              {users.map((u: any) => (
+                <View key={u.id} className="flex-row items-center justify-between py-2 border-b border-brand-border/30">
+                  <View className="flex-1">
+                    <Text className="text-brand-text text-sm">{u.email}</Text>
+                    <Text className="text-brand-muted text-xs">{u.name || '-'} · 분석 {u.analysis_count}회</Text>
+                  </View>
+                  <Badge label={u.plan.toUpperCase()} variant={u.plan === 'admin' ? 'primary' : u.plan === 'free' ? 'muted' : 'success'} />
+                </View>
+              ))}
+            </View>
+          )}
+        </Section>
+      </Container>
+    </ScrollView>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card className="flex-1 items-center p-4">
+      <Text className="text-brand-text text-lg font-bold">{value}</Text>
+      <Text className="text-brand-muted text-xs mt-1">{label}</Text>
+    </Card>
+  );
+}

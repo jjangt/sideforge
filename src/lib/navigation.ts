@@ -6,6 +6,7 @@ export const ROUTES = {
   analyze: '/analyze',
   mypage: '/mypage',
   contact: '/contact',
+  admin: '/admin',
   pricing: '/pricing',
   terms: '/terms',
   privacy: '/privacy',

@@ -1,103 +1,131 @@
-# 배포 가이드
+# 배포 아키텍처 & 파이프라인
 
-## 호스팅 구성
-
-| 환경 | 도메인 | 브랜치 | 서비스 |
-|------|--------|--------|--------|
-| 운영 | `sideforge.pages.dev` | main | Cloudflare Pages |
-| 개발 | `develop.sideforge.pages.dev` | develop | Cloudflare Pages |
-| 프리뷰 | `{해시}.sideforge.pages.dev` | 개별 커밋 | Cloudflare Pages |
-
-## 자동 배포 흐름
+## 서비스 구성
 
 ```
-git push origin develop  →  develop.sideforge.pages.dev (자동)
-git push origin main     →  sideforge.pages.dev (자동)
+┌─────────────────────────────────────────────────────────────────┐
+│                         Cloudflare                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [프론트엔드 - Cloudflare Pages]                                 │
+│  ├── 운영: sideforge.pages.dev            ← main 브랜치         │
+│  └── 개발: develop.sideforge.pages.dev    ← develop 브랜치       │
+│                                                                 │
+│  [백엔드 API - Cloudflare Workers]                               │
+│  ├── 운영: sideforge-api.tjang0608.workers.dev                  │
+│  └── 개발: sideforge-api-dev.tjang0608.workers.dev              │
+│                                                                 │
+│  [데이터베이스 - Cloudflare D1]                                   │
+│  ├── 운영: sideforge-db                                         │
+│  └── 개발: sideforge-db-dev                                     │
+│                                                                 │
+│  [AI - Cloudflare Workers AI]                                   │
+│  └── Llama 4 Scout 17B (공용, 무료 티어)                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-별도 CI/CD 설정 없이 GitHub push만 하면 Cloudflare가 자동 빌드 & 배포합니다.
+## 역할 정리
 
-## 배포 트리거가 안 될 때
+| 서비스 | 유형 | 역할 | 도메인 |
+|--------|------|------|--------|
+| sideforge (Pages) | 프론트엔드 | 사용자가 보는 웹사이트 | `sideforge.pages.dev` |
+| sideforge-api (Workers) | 백엔드 (운영) | 인증, 분석, DB 처리 | `sideforge-api.tjang0608.workers.dev` |
+| sideforge-api-dev (Workers) | 백엔드 (개발) | 개발/테스트용 API | `sideforge-api-dev.tjang0608.workers.dev` |
+| sideforge-db (D1) | DB (운영) | 운영 사용자/리포트 데이터 | - |
+| sideforge-db-dev (D1) | DB (개발) | 개발 테스트 데이터 | - |
 
-가끔 push 후에도 Cloudflare 빌드가 트리거되지 않을 수 있습니다.
+## 환경별 연결
 
-### 방법 1: 빈 커밋으로 재트리거
+| 환경 | 프론트엔드 | → API | → DB |
+|------|-----------|-------|------|
+| 로컬 (`localhost:5847`) | Expo Dev Server | `sideforge-api-dev` | `sideforge-db-dev` |
+| 개발 (`develop.sideforge.pages.dev`) | Cloudflare Pages (Preview) | `sideforge-api-dev` | `sideforge-db-dev` |
+| 운영 (`sideforge.pages.dev`) | Cloudflare Pages (Production) | `sideforge-api` | `sideforge-db` |
 
+## 배포 파이프라인
+
+### 프론트엔드 (자동)
+
+```
+코드 수정 → git push → Cloudflare Pages 자동 빌드 & 배포
+
+  develop 브랜치 push → develop.sideforge.pages.dev (자동)
+  main 브랜치 push    → sideforge.pages.dev (자동)
+```
+
+GitHub에 push만 하면 Cloudflare가 자동으로 `npm run build:web` 실행 → `dist/` 배포.
+
+### 백엔드 (수동 — wrangler deploy)
+
+```
+코드 수정 → wrangler deploy
+
+  npx wrangler deploy                 → sideforge-api (운영)
+  npx wrangler deploy --env development → sideforge-api-dev (개발)
+```
+
+백엔드는 `api/` 폴더에서 직접 배포 명령 실행 필요.
+
+### 전체 흐름도
+
+```
+[로컬 개발]
+    │
+    ├── 프론트 수정 → git push origin develop → 자동 배포 (dev 프론트)
+    │
+    ├── 백엔드 수정 → cd api && npx wrangler deploy --env development → 배포 (dev API)
+    │
+    └── 둘 다 수정 → npm run deploy:dev (원커맨드)
+
+[운영 배포]
+    │
+    ├── git push origin main → 자동 배포 (prod 프론트)
+    │
+    ├── cd api && npx wrangler deploy → 배포 (prod API)
+    │
+    └── 둘 다 → npm run deploy:prod (원커맨드)
+```
+
+## 원커맨드 배포
+
+### 개발 환경 전체 배포
 ```bash
-git commit --allow-empty -m "chore: trigger cloudflare build"
-git push origin develop   # 또는 main
+npm run deploy:dev
 ```
+→ develop push + 백엔드 dev 배포 한번에 실행
 
-### 방법 2: Cloudflare 대시보드에서 수동 배포
-
-1. Cloudflare 대시보드 → Workers & Pages → `sideforge`
-2. Deployments 탭
-3. "Create deployment" 또는 가장 최근 배포의 "Retry" 버튼 클릭
-
-### 방법 3: Preview 배포 설정 확인
-
-`develop` 브랜치 배포가 안 되는 경우:
-1. Pages → Settings → Builds & deployments
-2. "Preview deployments" 항목 확인
-3. **"All non-production branches"** 로 설정되어 있어야 함
-4. "None"으로 되어있으면 변경 필요
-
-### 배포 상태 확인
-
-- Cloudflare 대시보드 → Deployments 탭에서 빌드 로그 확인
-- 성공: 초록색 체크 + URL 표시
-- 실패: 빨간색 + 에러 로그 확인 가능
-
-## Cloudflare Pages 빌드 설정
-
-| 항목 | 값 |
-|------|-----|
-| 프로젝트 이름 | sideforge |
-| 프로덕션 브랜치 | main |
-| 프레임워크 | 없음 (커스텀) |
-| 빌드 명령 | `npm run build:web` |
-| 빌드 출력 디렉터리 | `dist` |
-| 루트 디렉터리 | `/` |
-| Node.js 버전 | 22.x (Cloudflare 기본) |
-
-## 의존성 충돌 해결
-
-`.npmrc` 파일에 아래 설정 필요 (Expo SDK 56 peer dependency 충돌 방지):
-
-```
-legacy-peer-deps=true
-```
-
-## 커스텀 도메인 연결 (향후)
-
-1. Cloudflare 또는 외부에서 도메인 구매
-2. Cloudflare Pages → 설정 → Custom domains → 도메인 추가
-3. DNS 자동 설정됨
-
-## 개발 환경 접근 제한 (선택)
-
-개발 도메인을 외부에 비공개하려면:
-- Cloudflare 대시보드 → Pages → 설정 → Access Policy
-- 이메일 인증 또는 비밀번호 설정 가능
-
-현재 상태: 공개 (URL 모르면 접근 불가, 검색엔진 noindex)
-
-## 백엔드 배포 (Phase 1에서 구축 예정)
-
-| 환경 | 도메인 | 서비스 |
-|------|--------|--------|
-| 운영 | `sideforge-api.{계정}.workers.dev` | Cloudflare Workers |
-| 개발 | `sideforge-api-dev.{계정}.workers.dev` | Cloudflare Workers |
-
-배포 명령:
+### 운영 환경 전체 배포
 ```bash
-cd sideforge-api
-wrangler deploy                    # 운영
-wrangler deploy --env development  # 개발
+npm run deploy:prod
 ```
+→ develop → main 머지 + push + 백엔드 prod 배포 한번에 실행
+
+### 백엔드만 배포
+```bash
+npm run deploy:api          # 운영
+npm run deploy:api:dev      # 개발
+```
+
+## 주의사항
+
+- 프론트엔드 환경변수(`EXPO_PUBLIC_API_URL`)는 **Cloudflare Pages 대시보드**에서 설정됨
+  - Production: `https://sideforge-api.tjang0608.workers.dev`
+  - Preview: `https://sideforge-api-dev.tjang0608.workers.dev`
+- 백엔드 시크릿은 `wrangler secret put` 으로 설정 (코드에 노출 안 됨)
+- `.env` 파일은 로컬 전용 (git에 안 올라감)
+
+## 트러블슈팅
+
+| 문제 | 해결 |
+|------|------|
+| 프론트 배포 안 됨 | Cloudflare Pages Deployments 탭 확인, `git commit --allow-empty` 트리거 |
+| 백엔드 배포 안 됨 | `cd api && npx wrangler deploy` 직접 실행 |
+| dev와 prod 데이터 섞임 | 각각 별도 DB (sideforge-db vs sideforge-db-dev) |
+| 환경변수 안 먹힘 | Cloudflare Pages Settings → Environment variables 확인 |
 
 ## 변경 이력
 
 | 날짜 | 작성자 | 변경 내용 |
 |------|--------|-----------|
-| 2025-06-22 | Team | 초기 작성, Cloudflare Pages 세팅 완료 |
+| 2026-06-22 | Team | 초기 작성 |

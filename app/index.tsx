@@ -27,7 +27,7 @@ function LoggedInHome({ user }: { user: any }) {
 
   return (
     <ScrollView className="flex-1 bg-brand-background">
-      <Container className="pt-16 pb-12">
+      <Container className="pt-8 pb-12">
         {/* 환영 메시지 */}
         <Text className="text-brand-text text-2xl font-bold mb-1">
           {user.name ? `${user.name}님, 안녕하세요` : '안녕하세요'} 👋
@@ -81,15 +81,26 @@ function LoggedInHome({ user }: { user: any }) {
         <Text className="text-brand-text text-lg font-bold mb-4">
           {planLabel} 플랜으로 이용 가능한 기능
         </Text>
-        <View className="gap-3 mb-8">
+        <View className="gap-3 mb-4">
           <FeatureRow icon="✅" text="AI 기반 채널 분석" available />
           <FeatureRow icon="✅" text="점수 + 요약 리포트" available />
-          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="개선 액션 제안" available={plan !== 'free'} />
-          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="추천 콘텐츠 제안" available={plan !== 'free'} />
-          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="댓글/반응 분석" available={plan === 'pro' || plan === 'admin'} />
-          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="경쟁 채널 벤치마킹" available={plan === 'pro' || plan === 'admin'} />
-          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="주간 정기 모니터링" available={plan === 'pro' || plan === 'admin'} />
+          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="개선 액션 제안" available={plan !== 'free'} locked={plan === 'free'} hint="Plus 플랜 이상" />
+          <FeatureRow icon={plan === 'free' ? '🔒' : '✅'} text="추천 콘텐츠 제안" available={plan !== 'free'} locked={plan === 'free'} hint="Plus 플랜 이상" />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="댓글/반응 분석" available={plan === 'pro' || plan === 'admin'} locked={plan !== 'pro' && plan !== 'admin'} hint="Pro 플랜" />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="경쟁 채널 벤치마킹" available={plan === 'pro' || plan === 'admin'} locked={plan !== 'pro' && plan !== 'admin'} hint="Pro 플랜" />
+          <FeatureRow icon={plan === 'pro' || plan === 'admin' ? '✅' : '🔒'} text="주간 정기 모니터링" available={plan === 'pro' || plan === 'admin'} locked={plan !== 'pro' && plan !== 'admin'} hint="Pro 플랜" />
         </View>
+
+        {/* 업그레이드 유도 */}
+        {plan === 'free' && (
+          <Card variant="highlight" className="p-5 mb-8 items-center">
+            <Text className="text-brand-text text-sm font-bold mb-2">플랜 업그레이드로 더 자세한 피드백을 받아보세요</Text>
+            <Text className="text-brand-muted text-xs text-center mb-3 leading-5">
+              구체적인 개선 액션, 추천 콘텐츠, 경쟁 채널 비교까지{"\n"}채널 성장에 필요한 모든 인사이트를 얻을 수 있습니다.
+            </Text>
+            <Button title="플랜 비교하기 →" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+          </Card>
+        )}
       </Container>
 
       {/* Footer */}
@@ -105,11 +116,14 @@ function LoggedInHome({ user }: { user: any }) {
   );
 }
 
-function FeatureRow({ icon, text, available }: { icon: string; text: string; available: boolean }) {
+function FeatureRow({ icon, text, available, locked, hint }: { icon: string; text: string; available: boolean; locked?: boolean; hint?: string }) {
   return (
     <View className="flex-row items-center gap-3">
       <Text className="text-base">{icon}</Text>
       <Text className={`text-sm flex-1 ${available ? 'text-brand-text' : 'text-brand-muted'}`}>{text}</Text>
+      {locked && hint && (
+        <Text className="text-brand-primary-light text-xs">{hint}</Text>
+      )}
     </View>
   );
 }

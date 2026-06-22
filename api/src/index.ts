@@ -179,7 +179,7 @@ ${topVideos}
 JSON으로 응답:
 {"score":0-100,"summary":"한줄요약","strengths":["강점"],"weaknesses":["약점"],"actions":["개선액션"],"contentIdeas":["추천콘텐츠"]}`;
 
-  const result = await ai.run('@cf/meta/llama-3.1-8b-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 1024 });
+  const result = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 1024 });
 
   try {
     const text = result.response || '';

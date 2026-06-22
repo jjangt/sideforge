@@ -108,6 +108,7 @@ sideforge/
 ### 프로젝트
 - [Vision](docs/project/vision.md)
 - [Roadmap](docs/project/roadmap.md)
+- [Phase 2 기획](docs/project/phase2-plan.md) ← **상용화 기능 기획**
 - [Requirements](docs/project/requirements.md)
 - [Changelog](docs/project/changelog.md)
 

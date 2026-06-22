@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { globalLoading } from '../stores/useGlobalLoadingStore';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
 
@@ -15,20 +16,25 @@ export async function clearToken(): Promise<void> {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = await getToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as any) };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  globalLoading.start();
+  try {
+    const token = await getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as any) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  // 관리자 플랜 시뮬레이션 — 백엔드에서 해당 플랜으로 데이터 필터링
-  const { useAuthStore } = await import('../stores/useAuthStore');
-  const simulatePlan = useAuthStore.getState().simulatePlan;
-  if (simulatePlan) headers['X-Simulate-Plan'] = simulatePlan;
+    // 관리자 플랜 시뮬레이션 — 백엔드에서 해당 플랜으로 데이터 필터링
+    const { useAuthStore } = await import('../stores/useAuthStore');
+    const simulatePlan = useAuthStore.getState().simulatePlan;
+    if (simulatePlan) headers['X-Simulate-Plan'] = simulatePlan;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const data = await res.json();
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    const data = await res.json();
 
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data as T;
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data as T;
+  } finally {
+    globalLoading.stop();
+  }
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

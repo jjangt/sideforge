@@ -239,19 +239,46 @@ function extractChannelId(url: string): string | null {
 
 async function fetchChannelData(channelId: string, apiKey: string) {
   const isHandle = !channelId.startsWith('UC');
-  const param = isHandle ? `forHandle=${channelId}` : `id=${channelId}`;
-  const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${apiKey}`);
+  
+  if (isHandle) {
+    // forHandle로 먼저 시도
+    const handleRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${channelId}&key=${apiKey}`);
+    const handleData = await handleRes.json() as any;
+    
+    if (handleData.items?.length) {
+      return parseChannel(handleData.items[0]);
+    }
+    
+    // forHandle 실패 시 search API로 펴백
+    const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${channelId}&type=channel&maxResults=1&key=${apiKey}`);
+    const searchData = await searchRes.json() as any;
+    
+    if (searchData.items?.length) {
+      const foundId = searchData.items[0].snippet.channelId;
+      const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${foundId}&key=${apiKey}`);
+      const chData = await chRes.json() as any;
+      if (chData.items?.length) return parseChannel(chData.items[0]);
+    }
+    
+    throw new Error('채널을 찾을 수 없습니다. URL을 확인해주세요.');
+  }
+  
+  // UC로 시작하는 채널 ID
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`);
   const data = await res.json() as any;
-  if (!data.items?.length) throw new Error('Channel not found');
-  const ch = data.items[0];
+  if (!data.items?.length) throw new Error('채널을 찾을 수 없습니다. URL을 확인해주세요.');
+  return parseChannel(data.items[0]);
+}
+
+function parseChannel(ch: any) {
   return {
     id: ch.id,
     title: ch.snippet.title,
     description: ch.snippet.description,
     thumbnail: ch.snippet.thumbnails?.medium?.url,
-    subscribers: Number(ch.statistics.subscriberCount),
-    totalViews: Number(ch.statistics.viewCount),
-    videoCount: Number(ch.statistics.videoCount),
+    subscribers: Number(ch.statistics.subscriberCount || 0),
+    totalViews: Number(ch.statistics.viewCount || 0),
+    videoCount: Number(ch.statistics.videoCount || 0),
     createdAt: ch.snippet.publishedAt,
   };
 }

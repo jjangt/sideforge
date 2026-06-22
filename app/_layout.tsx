@@ -4,14 +4,28 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ToastRenderer, ModalRenderer, Header } from '../src/components/ui';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ToastRenderer, ModalRenderer, Header, GlobalLoadingBar } from '../src/components/ui';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { navigate } from '../src/lib';
 
 export default function RootLayout() {
   const user = useAuthStore((s) => s.user);
   const adminVerified = useAuthStore((s) => s.adminVerified);
+  const setAdminVerified = useAuthStore((s) => s.setAdminVerified);
   const pathname = usePathname();
+
+  /**
+   * 앱 로드 시 admin_session 복원
+   * 새로고침해도 세션이 있으면 2FA 재요구 안 함
+   */
+  useEffect(() => {
+    if (user?.plan === 'admin' && !adminVerified) {
+      AsyncStorage.getItem('admin_session').then((session) => {
+        if (session) setAdminVerified(true);
+      });
+    }
+  }, [user]);
 
   /**
    * 관리자 2FA 가드
@@ -27,6 +41,7 @@ export default function RootLayout() {
     <View style={{ flex: 1, backgroundColor: '#0F0A1F' }}>
       <StatusBar style="light" />
       <Header />
+      <GlobalLoadingBar />
       <Stack
         screenOptions={{
           headerShown: false,

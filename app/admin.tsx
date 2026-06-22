@@ -27,7 +27,7 @@ export default function AdminScreen() {
 
   /**
    * 관리자 2FA 세션 확인
-   * 세션 없거나 만료 → admin-verify로 이동
+   * AsyncStorage에 세션이 있으면 바로 통과 (새로고침 대응)
    */
   async function checkAdminSession() {
     const session = await AsyncStorage.getItem('admin_session');
@@ -35,6 +35,9 @@ export default function AdminScreen() {
       navigate('/admin-verify', { replace: true });
       return;
     }
+    // 세션 있으면 adminVerified 복원
+    const { useAuthStore } = await import('../src/stores/useAuthStore');
+    useAuthStore.getState().setAdminVerified(true);
     loadAdminData();
   }
 

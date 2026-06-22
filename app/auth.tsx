@@ -98,6 +98,8 @@ export default function AuthScreen() {
             secureTextEntry
             hint={mode === 'signup' ? '8자 이상 입력' : undefined}
             className="mb-8"
+            onSubmitEditing={handleSubmit}
+            returnKeyType="done"
           />
 
           <Button title={mode === 'login' ? '로그인' : '회원가입'} onPress={handleSubmit} loading={loading} className="mb-4" />

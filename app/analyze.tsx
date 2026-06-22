@@ -88,6 +88,8 @@ export default function AnalyzeScreen() {
           onChangeText={setUrl}
           hint={selected.hint}
           className="mb-6"
+          onSubmitEditing={handleAnalyze}
+          returnKeyType="go"
         />
 
         <Button title="분석 시작 🔍" onPress={handleAnalyze} size="lg" className="w-full mb-6" />

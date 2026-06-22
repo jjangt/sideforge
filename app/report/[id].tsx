@@ -114,11 +114,11 @@ export default function ReportScreen() {
           )}
         </Section>
 
-        {/* 개선 액션 — Free는 1개 미리보기 + 잠금 */}
+        {/* 개선 액션 — Free는 1개 미리보기 + 모자이크 */}
         {analysis.actions === 'LOCKED' ? (
-          <LockedSection title="개선 액션" icon="🎯" description="지금 바로 실행할 수 있는 구체적인 개선 방법 3가지" plan="Plus" />
+          <LockedSection title="개선 액션" icon="🎯" description="구체적인 개선 방법을 확인하세요" plan="Plus" />
         ) : (
-          <Section title="지금 바로 할 수 있는 것" icon="🎯" className="mb-4"
+          <Section title="개선 액션" icon="🎯" className="mb-4"
             {...(analysis.actionsLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
@@ -133,18 +133,28 @@ export default function ReportScreen() {
                 </Card>
               ))}
               {analysis.actionsLocked && (
-                <View className="items-center pt-3">
-                  <Text className="text-brand-muted text-xs mb-2">나머지 2개는 Plus 플랜에서 확인 가능</Text>
-                  <Button title="업그레이드" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                <View className="rounded-xl overflow-hidden">
+                  <View className="bg-brand-surface-light p-4 rounded-xl" style={{ opacity: 0.4 }}>
+                    <View className="flex-row items-start gap-3">
+                      <View className="w-7 h-7 bg-brand-muted/30 rounded-lg" />
+                      <View className="flex-1 gap-2">
+                        <View className="h-3 bg-brand-muted/20 rounded w-full" />
+                        <View className="h-3 bg-brand-muted/20 rounded w-3/4" />
+                      </View>
+                    </View>
+                  </View>
+                  <View className="items-center py-3">
+                    <Button title="전체 확인하기" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                  </View>
                 </View>
               )}
             </View>
           </Section>
         )}
 
-        {/* 추천 콘텐츠 — Free는 1개 미리보기 + 잠금 */}
+        {/* 추천 콘텐츠 — Free는 1개 미리보기 + 모자이크 */}
         {analysis.contentIdeas === 'LOCKED' ? (
-          <LockedSection title="추천 콘텐츠" icon="💡" description="AI가 추천하는 다음 콘텐츠 주제 3가지" plan="Plus" />
+          <LockedSection title="추천 콘텐츠" icon="💡" description="AI가 추천하는 콘텐츠 주제를 확인하세요" plan="Plus" />
         ) : (
           <Section title="추천 콘텐츠" icon="💡" className="mb-4"
             {...(analysis.contentIdeasLocked ? { badge: 'Plus 플랜 이상' } : {})}
@@ -157,9 +167,16 @@ export default function ReportScreen() {
                 </View>
               ))}
               {analysis.contentIdeasLocked && (
-                <View className="items-center pt-3">
-                  <Text className="text-brand-muted text-xs mb-2">나머지 2개는 Plus 플랜에서 확인 가능</Text>
-                  <Button title="업그레이드" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                <View className="rounded-xl overflow-hidden">
+                  <View className="bg-brand-surface-light p-4 rounded-xl" style={{ opacity: 0.4 }}>
+                    <View className="gap-2">
+                      <View className="h-3 bg-brand-muted/20 rounded w-full" />
+                      <View className="h-3 bg-brand-muted/20 rounded w-4/5" />
+                    </View>
+                  </View>
+                  <View className="items-center py-3">
+                    <Button title="전체 확인하기" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+                  </View>
                 </View>
               )}
             </View>
@@ -168,14 +185,33 @@ export default function ReportScreen() {
 
         {/* 벤치마킹 — Free/Plus 잠금 */}
         {analysis.benchmarks === 'LOCKED' ? (
-          <LockedSection title="벤치마킹 채널" icon="📊" description="같은 카테고리에서 잘 되고 있는 실제 채널과 비교 분석" plan="Pro" />
+          <Section title="벤치마킹 채널" icon="📊" badge="Pro 플랜" className="mb-4">
+            <View className="rounded-xl overflow-hidden">
+              <View className="bg-brand-surface-light p-4 rounded-xl" style={{ opacity: 0.4 }}>
+                <View className="gap-3">
+                  <View className="h-4 bg-brand-muted/20 rounded w-2/3" />
+                  <View className="h-3 bg-brand-muted/20 rounded w-full" />
+                  <View className="h-3 bg-brand-muted/20 rounded w-4/5" />
+                </View>
+              </View>
+              <View className="items-center py-3">
+                <Text className="text-brand-muted text-xs mb-2">경쟁 채널 비교 분석을 확인하세요</Text>
+                <Button title="Pro 플랜 알아보기" size="sm" onPress={() => navigate(ROUTES.pricing)} />
+              </View>
+            </View>
+          </Section>
         ) : analysis.benchmarks?.length > 0 ? (
-          <Section title="참고 채널" icon="📊" className="mb-4">
+          <Section title="벤치마킹 채널" icon="📊" className="mb-4">
             <View className="gap-3">
               {analysis.benchmarks.map((b: any, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
-                  <Text className="text-brand-text font-bold text-sm">{b.name || b}</Text>
-                  {b.reason && <Text className="text-brand-muted text-xs mt-1">{b.reason}</Text>}
+                  <Text
+                    className="text-brand-primary-light font-bold text-sm mb-2"
+                    onPress={() => b.url && (window as any).open?.(`https://${b.url}`, '_blank')}
+                  >
+                    {b.name || b} ↗
+                  </Text>
+                  {b.reason && <Text className="text-brand-muted text-sm leading-6">{b.reason}</Text>}
                 </Card>
               ))}
             </View>

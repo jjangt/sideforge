@@ -92,7 +92,7 @@ export default {
 
       return json({ error: 'Not found' }, 404);
     } catch (e: any) {
-      return json({ error: e.message || 'Internal error' }, 500);
+      return json({ error: e.message || 'Internal error', stack: e.stack?.slice(0, 200) }, 500);
     }
   },
 };

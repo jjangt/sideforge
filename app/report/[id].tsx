@@ -65,7 +65,10 @@ export default function ReportScreen() {
             <Text style={{ color: scoreColor(analysis.score) }} className="text-4xl font-bold">{analysis.score}</Text>
           </View>
           <Badge label={scoreLabel(analysis.score)} variant={scoreVariant(analysis.score)} />
-          <Text className="text-brand-muted text-sm mt-3 text-center leading-6">{analysis.summary}</Text>
+          {analysis.category && (
+            <Badge label={typeof analysis.category === 'string' ? analysis.category : ''} variant="muted" className="mt-2" />
+          )}
+          <Text className="text-brand-muted text-sm mt-3 text-center leading-6">{typeof analysis.summary === 'string' ? analysis.summary : ''}</Text>
         </Card>
 
         {/* 영상별 조회수 그래프 (Plus 이상) */}
@@ -144,7 +147,7 @@ export default function ReportScreen() {
             {...(analysis.actionsLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.actions?.map((a: any, i: number) => (
+              {analysis.actions?.filter((a: any) => typeof a === 'string' && !a.includes('[') && a.trim()).map((a: any, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
                   <View className="flex-row items-start gap-3">
                     <View className="w-7 h-7 bg-brand-primary rounded-lg items-center justify-center">
@@ -182,7 +185,7 @@ export default function ReportScreen() {
             {...(analysis.contentIdeasLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.contentIdeas?.map((c: any, i: number) => (
+              {analysis.contentIdeas?.filter((c: any) => typeof c === 'string' && !c.includes('[') && c.trim()).map((c: any, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
                   <Text className="text-brand-primary-light text-sm">→</Text>
                   <Text className="text-brand-text text-sm flex-1 leading-6">{typeof c === 'string' ? c : JSON.stringify(c)}</Text>
@@ -222,10 +225,10 @@ export default function ReportScreen() {
               </View>
             </View>
           </Section>
-        ) : analysis.benchmarks?.length > 0 ? (
+        ) : analysis.benchmarks?.length > 0 && analysis.benchmarks.some((b: any) => b?.name) ? (
           <Section title="벤치마킹 채널" icon="📊" className="mb-4">
             <View className="gap-3">
-              {analysis.benchmarks.map((b: any, i: number) => (
+              {analysis.benchmarks.filter((b: any) => b?.name).map((b: any, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
                   <Text
                     className="text-brand-primary-light font-bold text-sm mb-2"

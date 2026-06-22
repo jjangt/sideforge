@@ -80,17 +80,23 @@ sideforge/
 - [공용 라이브러리 (Navigation/Feedback)](docs/api/lib.md)
 - [Mock Response 구조](docs/api/mock-response.md)
 
-### 디자인 & i18n
-- [디자인 시스템](docs/design/design-system.md)
-- [다국어(i18n) 가이드](docs/features/i18n.md)
-
-### 아키텍처
+### 인프라 & 아키텍처
+- [인프라 구성 (Cloudflare)](docs/architecture/infrastructure.md) ← **서버/AI/DB 구성**
 - [System Design](docs/architecture/system-design.md)
 - [Frontend](docs/architecture/frontend.md)
 - [Backend](docs/architecture/backend.md)
 - [AI Architecture](docs/architecture/ai-architecture.md)
 
-### 기능 명세
+### 디자인 & i18n
+- [디자인 시스템](docs/design/design-system.md)
+- [다국어(i18n) 가이드](docs/features/i18n.md)
+
+### 기능 명세 (분석)
+- [YouTube 분석](docs/features/youtube-analysis.md) ← **Phase 1 핵심**
+- [Blog 분석](docs/features/blog-analysis.md) (Phase 2)
+- [Instagram 분석](docs/features/instagram-analysis.md) (Phase 3)
+
+### 기능 명세 (브랜드 생성 — 기존)
 - [Onboarding](docs/features/onboarding.md)
 - [Recommendations](docs/features/recommendations.md)
 - [Brand Generation](docs/features/brand-generation.md)

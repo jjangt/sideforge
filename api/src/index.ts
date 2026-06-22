@@ -104,7 +104,7 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
   if (!body.url) return json({ error: 'url is required' }, 400);
 
   const channelId = extractChannelId(body.url);
-  if (!channelId) return json({ error: 'Invalid YouTube URL' }, 400);
+  if (!channelId) return json({ error: `URL을 인식할 수 없습니다: ${body.url}` }, 400);
 
   const channelData = await fetchChannelData(channelId, env.YOUTUBE_API_KEY);
   const videos = await fetchRecentVideos(channelData.id, env.YOUTUBE_API_KEY);
@@ -222,14 +222,14 @@ async function handleAdminUsers(env: Env): Promise<Response> {
 // ─── YouTube Data API ─────────────────────────────────────────────────────────
 
 function extractChannelId(url: string): string | null {
+  // URL 정규화: 공백 제거, www. 포함 여부 무관하게 처리
+  const cleaned = url.trim();
   const patterns = [
     /youtube\.com\/@([^/?]+)/,
     /youtube\.com\/channel\/([^/?]+)/,
     /youtube\.com\/c\/([^/?]+)/,
     /youtu\.be\/([^/?]+)/,
   ];
-  // www. 제거 + 후행 공백/줄바꿈 제거
-  const cleaned = url.trim().replace(/^https?:\/\/(www\.)?/, 'https://');
   for (const p of patterns) {
     const m = cleaned.match(p);
     if (m) return m[1];

@@ -34,12 +34,15 @@ export async function verifyTOTP(secret: string, code: string): Promise<boolean>
 
 /**
  * TOTP 코드 생성 (HMAC-SHA1 기반)
+ * 시크릿을 Base32 디코딩 후 HMAC 키로 사용
  */
 async function generateTOTP(secret: string, counter: number): Promise<string> {
-  const encoder = new TextEncoder();
+  // Base32 디코딩
+  const keyBytes = base32Decode(secret);
+  
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(secret),
+    keyBytes,
     { name: 'HMAC', hash: 'SHA-1' },
     false,
     ['sign']
@@ -64,6 +67,28 @@ async function generateTOTP(secret: string, counter: number): Promise<string> {
 
   // 6자리 코드
   return (binary % 1000000).toString().padStart(6, '0');
+}
+
+/**
+ * Base32 디코딩 (RFC 4648)
+ * Google Authenticator는 Base32로 인코딩된 시크릿을 사용
+ */
+function base32Decode(input: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const cleaned = input.toUpperCase().replace(/[^A-Z2-7]/g, '');
+  
+  let bits = '';
+  for (const c of cleaned) {
+    const val = chars.indexOf(c);
+    if (val === -1) continue;
+    bits += val.toString(2).padStart(5, '0');
+  }
+  
+  const bytes = new Uint8Array(Math.floor(bits.length / 8));
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(bits.slice(i * 8, (i + 1) * 8), 2);
+  }
+  return bytes;
 }
 
 /**

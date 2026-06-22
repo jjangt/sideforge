@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Image } from 'react-native';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
-import { Container, Card, Button, Input, Badge } from '../src/components/ui';
+import { Container, Card, Button, Input, Badge, Loading } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 import { toast } from '../src/lib';
 
@@ -81,6 +81,7 @@ export default function AdminVerifyScreen() {
   }
 
   if (!user || user.plan !== 'admin') return null;
+  if (step === 'loading') return <Loading message="인증 상태 확인 중..." />;
 
   /** 최초 설정 화면 — 시크릿을 Authenticator에 등록 */
   if (step === 'setup') {

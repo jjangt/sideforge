@@ -68,11 +68,13 @@ async function generateTOTP(secret: string, counter: number): Promise<string> {
 
 /**
  * TOTP 시크릿 생성 (관리자 최초 등록 시)
+ * Google Authenticator는 Base32 인코딩된 시크릿을 요구함
  */
 export function generateTOTPSecret(): string {
-  const array = new Uint8Array(20);
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const array = new Uint8Array(16);
   crypto.getRandomValues(array);
-  return Array.from(array).map(b => b.toString(36)).join('').slice(0, 20);
+  return Array.from(array).map(b => chars[b % 32]).join('');
 }
 
 /**

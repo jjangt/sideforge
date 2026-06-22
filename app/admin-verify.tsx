@@ -17,6 +17,7 @@ import { toast } from '../src/lib';
 
 export default function AdminVerifyScreen() {
   const user = useAuthStore((s) => s.user);
+  const setAdminVerified = useAuthStore((s) => s.setAdminVerified);
   const [step, setStep] = useState<'loading' | 'setup' | 'verify'>('loading');
   const [secret, setSecret] = useState('');
   const [code, setCode] = useState('');
@@ -66,8 +67,8 @@ export default function AdminVerifyScreen() {
     try {
       const result = await api.adminVerifyTOTP(code);
       if (result.success) {
-        // 세션 토큰 저장
         await api.setAdminSession(result.adminSession || '');
+        setAdminVerified(true);
         toast({ message: '관리자 인증 완료', type: 'success' });
         navigate(ROUTES.admin, { replace: true });
       }
@@ -96,7 +97,7 @@ export default function AdminVerifyScreen() {
           <Card variant="highlight" className="w-full p-6 mb-6 items-center">
             <Text className="text-brand-muted text-xs mb-3">Authenticator 앱에서 QR 스캔</Text>
             <Image
-              source={{ uri: `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(`otpauth://totp/SideForge:${user.email}?secret=${secret}&issuer=SideForge`)}` }}
+              source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`otpauth://totp/SideForge:${user.email}?secret=${secret}&issuer=SideForge`)}` }}
               style={{ width: 200, height: 200 }}
               className="mb-4"
             />

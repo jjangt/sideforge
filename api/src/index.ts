@@ -226,9 +226,12 @@ function extractChannelId(url: string): string | null {
     /youtube\.com\/@([^/?]+)/,
     /youtube\.com\/channel\/([^/?]+)/,
     /youtube\.com\/c\/([^/?]+)/,
+    /youtu\.be\/([^/?]+)/,
   ];
+  // www. 제거 + 후행 공백/줄바꿈 제거
+  const cleaned = url.trim().replace(/^https?:\/\/(www\.)?/, 'https://');
   for (const p of patterns) {
-    const m = url.match(p);
+    const m = cleaned.match(p);
     if (m) return m[1];
   }
   return null;

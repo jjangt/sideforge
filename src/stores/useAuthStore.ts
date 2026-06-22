@@ -17,12 +17,15 @@ interface AuthState {
   isLoading: boolean;
   /** 관리자 플랜 시뮬레이션 (기본: null = 실제 플랜 사용) */
   simulatePlan: string | null;
+  /** 관리자 2FA 인증 완료 여부 */
+  adminVerified: boolean;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
   setSimulatePlan: (plan: string | null) => void;
+  setAdminVerified: (verified: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isLoading: false,
       simulatePlan: null,
+      adminVerified: false,
 
       signup: async (email, password, name) => {
         const { token, user } = await api.signup(email, password, name);
@@ -56,7 +60,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         await clearToken();
         // 로그아웃 시 모든 로컬 상태 초기화 — 뒤로가기로 이전 데이터 접근 방지
-        set({ user: null, simulatePlan: null });
+        set({ user: null, simulatePlan: null, adminVerified: false });
       },
 
       loadUser: async () => {
@@ -70,6 +74,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setSimulatePlan: (plan) => set({ simulatePlan: plan }),
+      setAdminVerified: (verified) => set({ adminVerified: verified }),
     }),
     {
       name: 'sideforge-auth',

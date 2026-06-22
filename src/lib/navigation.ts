@@ -4,6 +4,9 @@ export const ROUTES = {
   landing: '/',
   auth: '/auth',
   analyze: '/analyze',
+  pricing: '/pricing',
+  terms: '/terms',
+  privacy: '/privacy',
   report: (id: string) => `/report/${id}` as const,
   // 기존 브랜드 생성 플로우
   onboarding: '/onboarding',

@@ -60,7 +60,7 @@ export default function LandingScreen() {
         <Text className="text-brand-text text-xl font-bold text-center mb-8">지원 플랫폼</Text>
         <View className="gap-3">
           <PlatformCard icon="▶️" name="YouTube" status="available" desc="채널 분석, 영상별 피드백, 댓글 분석" />
-          <PlatformCard icon="📝" name="Blog" status="coming" desc="네이버 블로그, 티스토리 분석" />
+          <PlatformCard icon="📝" name="Blog" status="coming" desc="네이버, 티스토리, Medium, WordPress, Velog" />
           <PlatformCard icon="📸" name="Instagram" status="coming" desc="피드 분석, 해시태그 전략, 참여율" />
         </View>
       </Container>
@@ -69,14 +69,15 @@ export default function LandingScreen() {
       <Container className="pb-12">
         <Text className="text-brand-text text-xl font-bold text-center mb-8">가격</Text>
         <View className="gap-3">
-          <PricingCard plan="Free" price="₩0" features={['3회 분석 (평생)', 'YouTube 기본 리포트', '점수 + 요약']} />
-          <PricingCard plan="Plus" price="₩9,900/월" features={['30회/월 분석', 'YouTube + Blog', '상세 리포트 + 추천 콘텐츠', '광고 없음']} highlight />
-          <PricingCard plan="Pro" price="₩29,900/월" features={['무제한 분석', '전체 플랫폼', '댓글 분석 + 경쟁사 비교', '정기 모니터링 + 광고 없음']} />
+          <PricingCard plan="Free" price="₩0" features={['월 3회 분석', '플랫폼 1개 선택', '기본 리포트 (7일 열람)']} />
+          <PricingCard plan="Plus" price="₩9,900/월" features={['월 30회 분석', '플랫폼 2개 조합', '상세 리포트 + 추천 콘텐츠', '광고 없음']} highlight />
+          <PricingCard plan="Pro" price="₩29,900/월" features={['무제한 분석', '전체 플랫폼', '댓글 분석 + 경쟁사 비교', '주간 모니터링 + 광고 없음']} />
         </View>
+        <Button title="플랜 비교 더 보기" variant="ghost" onPress={() => navigate(ROUTES.pricing)} className="mt-4" />
       </Container>
 
       {/* CTA */}
-      <Container className="pb-24 items-center">
+      <Container className="pb-12 items-center">
         <Card className="w-full items-center p-8">
           <Text className="text-3xl mb-3">🚀</Text>
           <Text className="text-brand-text text-base font-bold text-center mb-4">
@@ -84,6 +85,16 @@ export default function LandingScreen() {
           </Text>
           <Button title="무료로 시작하기" onPress={() => navigate(ROUTES.analyze)} className="w-full" />
         </Card>
+      </Container>
+
+      {/* Footer */}
+      <Container className="pb-24 items-center">
+        <View className="flex-row gap-4">
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.pricing)}>가격</Text>
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.terms)}>이용약관</Text>
+          <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.privacy)}>개인정보처리방침</Text>
+        </View>
+        <Text className="text-brand-muted text-xs mt-2">© 2025 SideForge. All rights reserved.</Text>
       </Container>
     </ScrollView>
   );

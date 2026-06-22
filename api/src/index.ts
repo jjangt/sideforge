@@ -242,7 +242,8 @@ async function fetchChannelData(channelId: string, apiKey: string) {
   
   if (isHandle) {
     // forHandle로 먼저 시도
-    const handleRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${channelId}&key=${apiKey}`);
+    const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${channelId}&key=${apiKey}`;
+    const handleRes = await fetch(handleUrl);
     const handleData = await handleRes.json() as any;
     
     if (handleData.items?.length) {
@@ -250,7 +251,8 @@ async function fetchChannelData(channelId: string, apiKey: string) {
     }
     
     // forHandle 실패 시 search API로 펴백
-    const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${channelId}&type=channel&maxResults=1&key=${apiKey}`);
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${channelId}&type=channel&maxResults=1&key=${apiKey}`;
+    const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json() as any;
     
     if (searchData.items?.length) {
@@ -260,7 +262,8 @@ async function fetchChannelData(channelId: string, apiKey: string) {
       if (chData.items?.length) return parseChannel(chData.items[0]);
     }
     
-    throw new Error('채널을 찾을 수 없습니다. URL을 확인해주세요.');
+    // 디버깅: 실패 원인 포함
+    throw new Error(`채널을 찾을 수 없습니다. handle=${channelId}, apiResp=${JSON.stringify(handleData?.error || handleData?.pageInfo).slice(0, 100)}`);
   }
   
   // UC로 시작하는 채널 ID

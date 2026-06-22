@@ -94,7 +94,7 @@ export default function LandingScreen() {
           <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.terms)}>이용약관</Text>
           <Text className="text-brand-muted text-xs" onPress={() => navigate(ROUTES.privacy)}>개인정보처리방침</Text>
         </View>
-        <Text className="text-brand-muted text-xs mt-2">© 2025 SideForge. All rights reserved.</Text>
+        <Text className="text-brand-muted text-xs mt-2">© 2026 SideForge. All rights reserved.</Text>
       </Container>
     </ScrollView>
   );

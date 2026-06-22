@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { api } from '../src/services/api';
-import { Container, Button, Input, Card, Loading } from '../src/components/ui';
+import { Container, Button, Input, Card, Loading, AdBanner } from '../src/components/ui';
 import { navigate, ROUTES } from '../src/lib';
 import { toast } from '../src/lib';
 
@@ -75,6 +75,9 @@ export default function AnalyzeScreen() {
             <Text className="text-brand-muted text-xs">• https://youtube.com/channel/UCxxxxxx</Text>
           </View>
         </View>
+
+        {/* 광고 */}
+        <AdBanner slot="analyze-bottom" className="mt-10" />
       </Container>
     </ScrollView>
   );

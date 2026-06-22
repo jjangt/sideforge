@@ -6,7 +6,7 @@ export default function TermsScreen() {
     <ScrollView className="flex-1 bg-brand-background">
       <Container className="py-12">
         <Text className="text-brand-text text-2xl font-bold mb-2">이용약관</Text>
-        <Text className="text-brand-muted text-xs mb-8">최종 수정일: 2025년 6월 22일</Text>
+        <Text className="text-brand-muted text-xs mb-8">최종 수정일: 2026년 6월 22일</Text>
 
         <Section title="제1조 (목적)" body="본 약관은 SideForge(이하 '서비스')를 이용함에 있어 회사와 이용자 간의 권리, 의무 및 책임사항을 규정합니다." />
         <Section title="제2조 (서비스 내용)" body="서비스는 YouTube, Blog, Instagram 등의 공개된 채널 데이터를 수집하여 AI 분석 리포트를 제공합니다. 분석은 공개된 데이터만을 대상으로 하며, AI 분석 결과는 참고 목적이며 정확성을 보장하지 않습니다." />
@@ -16,7 +16,7 @@ export default function TermsScreen() {
         <Section title="제6조 (면책)" body="AI 분석 결과를 바탕으로 한 의사결정에 대해 회사는 책임지지 않습니다. 외부 플랫폼 API 변경이나 장애로 인한 서비스 중단에 대해 회사는 책임지지 않습니다." />
         <Section title="제7조 (약관 변경)" body="약관 변경 시 7일 전 공지합니다. 변경된 약관에 동의하지 않을 경우 서비스 이용을 중단할 수 있습니다." />
 
-        <Text className="text-brand-muted text-xs mt-8">본 약관은 2025년 6월 22일부터 시행합니다.</Text>
+        <Text className="text-brand-muted text-xs mt-8">본 약관은 2026년 6월 22일부터 시행합니다.</Text>
       </Container>
     </ScrollView>
   );

@@ -6,7 +6,7 @@ export default function PrivacyScreen() {
     <ScrollView className="flex-1 bg-brand-background">
       <Container className="py-12">
         <Text className="text-brand-text text-2xl font-bold mb-2">개인정보처리방침</Text>
-        <Text className="text-brand-muted text-xs mb-8">최종 수정일: 2025년 6월 22일</Text>
+        <Text className="text-brand-muted text-xs mb-8">최종 수정일: 2026년 6월 22일</Text>
 
         <Section title="1. 수집하는 개인정보">
           <Row label="이메일 (필수)" desc="계정 식별, 로그인" />

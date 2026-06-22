@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api } from '../../src/services/api';
-import { Container, Card, Section, Badge, Button, Loading } from '../../src/components/ui';
+import { Container, Card, Section, Badge, Button, Loading, AdBanner } from '../../src/components/ui';
 import { goBack } from '../../src/lib';
 
 export default function ReportScreen() {
@@ -101,6 +101,9 @@ export default function ReportScreen() {
 
         {/* Back */}
         <Button title="← 다시 분석하기" variant="outline" onPress={goBack} className="mt-10" />
+
+        {/* 광고 */}
+        <AdBanner slot="report-bottom" className="mt-6" />
       </Container>
     </ScrollView>
   );

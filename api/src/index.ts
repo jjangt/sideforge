@@ -217,12 +217,15 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[]) {
 구독자: ${channel.subscribers.toLocaleString()}명
 총 영상: ${channel.videoCount}개
 총 조회수: ${channel.totalViews.toLocaleString()}회
+채널 설명: ${channel.description?.slice(0, 200) || '없음'}
 
 최근 영상 성과:
 ${topVideos}
 
-JSON으로 응답:
-{"score":0-100,"summary":"한줄요약","strengths":["강점"],"weaknesses":["약점"],"actions":["개선액션"],"contentIdeas":["추천콘텐츠"]}`;
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만:
+{"score":0-100,"summary":"한줄요약","strengths":["강점1","강점2","강점3"],"weaknesses":["약점1","약점2","약점3"],"actions":["구체적 개선액션1","개선액션2","개선액션3"],"contentIdeas":["추천콘텐츠1","추천콘텐츠2","추천콘텐츠3"],"benchmarks":[{"name":"실제 존재하는 유사 성공 채널명","reason":"이 채널이 잘하는 점 설명","url":"youtube.com/@채널핸들"},{"name":"두번째 참고 채널","reason":"참고할 점","url":"youtube.com/@채널핸들"},{"name":"세번째 참고 채널","reason":"참고할 점","url":"youtube.com/@채널핸들"}]}
+
+중요: benchmarks는 반드시 실제로 존재하는 YouTube 채널이어야 합니다. 가상의 채널을 만들지 마세요.`;
 
   const result = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 1024 });
 

@@ -109,7 +109,7 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
   const channelData = await fetchChannelData(channelId, env.YOUTUBE_API_KEY);
   const videos = await fetchRecentVideos(channelData.id, env.YOUTUBE_API_KEY);
   // 동일 카테고리 인기 영상 검색 (벤치마킹용)
-  const trendingVideos = await fetchTrendingInCategory(channelData, env.YOUTUBE_API_KEY);
+  const trendingVideos = await fetchTrendingInCategory(channelData, videos, env.YOUTUBE_API_KEY);
   const analysis = await analyzeWithAI(env.AI, channelData, videos, trendingVideos);
 
   const reportId = crypto.randomUUID();
@@ -309,6 +309,9 @@ async function fetchRecentVideos(channelId: string, apiKey: string) {
     views: Number(v.statistics.viewCount || 0),
     likes: Number(v.statistics.likeCount || 0),
     comments: Number(v.statistics.commentCount || 0),
+    categoryId: v.snippet.categoryId || '',
+    tags: v.snippet.tags || [],
+    description: (v.snippet.description || '').slice(0, 200),
   }));
 }
 

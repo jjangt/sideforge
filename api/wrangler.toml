@@ -13,7 +13,24 @@ database_id = "TODO_REPLACE_WITH_ACTUAL_ID"
 [vars]
 ENVIRONMENT = "production"
 
+# Secrets (set via `wrangler secret put`):
+# - YOUTUBE_API_KEY
+# - JWT_SECRET
+# - PASSWORD_SALT
+# - GOOGLE_CLIENT_ID
+
+# ─── Development Environment ──────────────────────────────────────────────────
+
 [env.development]
 name = "sideforge-api-dev"
+
 [env.development.vars]
 ENVIRONMENT = "development"
+
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "sideforge-db-dev"
+database_id = "TODO_REPLACE_WITH_DEV_DB_ID"
+
+[env.development.ai]
+binding = "AI"

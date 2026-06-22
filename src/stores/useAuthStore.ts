@@ -9,6 +9,7 @@ interface User {
   name: string;
   plan: string;
   analysisCount: number;
+  avatar?: string;
 }
 
 interface AuthState {
@@ -16,6 +17,7 @@ interface AuthState {
   isLoading: boolean;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
 }
@@ -34,6 +36,15 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email, password) => {
         const { token, user } = await api.login(email, password);
+        await setToken(token);
+        set({ user });
+      },
+
+      loginWithGoogle: async () => {
+        // Web: Google Identity Services를 통해 idToken 획득
+        const idToken = await getGoogleIdToken();
+        if (!idToken) throw new Error('Google 인증 취소');
+        const { token, user } = await api.googleAuth(idToken);
         await setToken(token);
         set({ user });
       },
@@ -60,3 +71,26 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// ─── Google Identity Services (Web) ───────────────────────────────────────────
+
+function getGoogleIdToken(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) { resolve(null); return; }
+
+    // @ts-ignore - Google Identity Services global
+    if (typeof google === 'undefined' || !google.accounts) { resolve(null); return; }
+
+    // @ts-ignore
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response: any) => resolve(response.credential || null),
+    });
+
+    // @ts-ignore
+    google.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) resolve(null);
+    });
+  });
+}

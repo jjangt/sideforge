@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://sideforge-api.workers.dev';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
 
 async function getToken(): Promise<string | null> {
   return AsyncStorage.getItem('token');
@@ -16,7 +16,7 @@ export async function clearToken(): Promise<void> {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...options.headers as any };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options.headers as any) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
@@ -26,24 +26,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthResponse {
   token: string;
-  user: { id: string; email: string; name: string; plan: string; analysisCount: number };
+  user: { id: string; email: string; name: string; plan: string; analysisCount: number; avatar?: string };
 }
 
+// ─── API Methods ──────────────────────────────────────────────────────────────
+
 export const api = {
+  // Auth
   signup: (email: string, password: string, name?: string) =>
     request<AuthResponse>('/api/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
 
   login: (email: string, password: string) =>
     request<AuthResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
+  googleAuth: (idToken: string) =>
+    request<AuthResponse>('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
+
   me: () => request<AuthResponse['user']>('/api/auth/me'),
 
-  // ─── Analysis ───────────────────────────────────────────────────────────────
-
+  // Analysis
   analyzeYouTube: (url: string) =>
     request<{ reportId: string; channel: any; analysis: any }>('/api/analyze/youtube', { method: 'POST', body: JSON.stringify({ url }) }),
 

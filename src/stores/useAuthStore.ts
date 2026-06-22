@@ -55,7 +55,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         await clearToken();
-        set({ user: null });
+        // 로그아웃 시 모든 로컬 상태 초기화 — 뒤로가기로 이전 데이터 접근 방지
+        set({ user: null, simulatePlan: null });
       },
 
       loadUser: async () => {

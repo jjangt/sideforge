@@ -1,18 +1,29 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useAuthStore } from '../../src/stores/useAuthStore';
 import { api } from '../../src/services/api';
 import { Container, Card, Section, Badge, Button, Loading, ProgressBar, BarChart, StatRow } from '../../src/components/ui';
 import { navigate, goBack, ROUTES } from '../../src/lib';
 
 export default function ReportScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const user = useAuthStore((s) => s.user);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * 인증 체크 — 로그아웃 상태에서 뒤로가기로 접근 방지
+   */
   useEffect(() => {
-    if (id) loadReport(id);
-  }, [id]);
+    if (!user) {
+      navigate(ROUTES.auth, { replace: true });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (id && user) loadReport(id);
+  }, [id, user]);
 
   async function loadReport(reportId: string) {
     try {

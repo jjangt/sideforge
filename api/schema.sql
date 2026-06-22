@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   analysis_count INTEGER DEFAULT 0,
   provider TEXT DEFAULT 'email',
   avatar TEXT DEFAULT '',
+  totp_secret TEXT DEFAULT '',
   created_at TEXT NOT NULL
 );
 
@@ -27,3 +28,12 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_reports_user ON reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_channel ON reports(channel_id);
 CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);
+
+-- Admin 2FA sessions
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token TEXT UNIQUE NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);

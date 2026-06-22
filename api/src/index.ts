@@ -66,6 +66,14 @@ export default {
       }
 
       // Admin APIs
+      if (path === '/api/admin/verify-totp' && request.method === 'POST') {
+        const userId = await getUserIdFromRequest(request, env);
+        if (!userId) return json({ error: 'Unauthorized' }, 401);
+        const user = await env.DB.prepare('SELECT plan, totp_secret FROM users WHERE id = ?').bind(userId).first() as any;
+        if (user?.plan !== 'admin') return json({ error: 'Forbidden' }, 403);
+        return handleAdminTOTP(request, userId, user.totp_secret, env);
+      }
+
       if (path === '/api/admin/stats' && request.method === 'GET') {
         const userId = await getUserIdFromRequest(request, env);
         if (!userId) return json({ error: 'Unauthorized' }, 401);
@@ -166,6 +174,37 @@ async function handleMyReports(userId: string, env: Env): Promise<Response> {
 }
 
 // ─── Admin ─────────────────────────────────────────────────────────────────────
+
+/**
+ * 관리자 TOTP 2차 인증 처리
+ * - 최초 접근 시 totp_secret이 없으면 생성하여 반환 (QR 등록용)
+ * - 이후 접근 시 코드 검증 후 1시간 세션 발급
+ */
+async function handleAdminTOTP(request: Request, userId: string, totpSecret: string, env: Env): Promise<Response> {
+  const { verifyTOTP, generateTOTPSecret } = await import('./admin-auth');
+  const body = await request.json() as { code?: string };
+
+  // 최초 설정: totp_secret이 없으면 생성
+  if (!totpSecret) {
+    const secret = generateTOTPSecret();
+    await env.DB.prepare('UPDATE users SET totp_secret = ? WHERE id = ?').bind(secret, userId).run();
+    return json({ needSetup: true, secret, message: 'Google Authenticator에 이 시크릿을 등록하세요' });
+  }
+
+  // 코드 검증
+  if (!body.code) return json({ error: 'TOTP code required' }, 400);
+
+  const valid = await verifyTOTP(totpSecret, body.code);
+  if (!valid) return json({ error: 'Invalid TOTP code' }, 401);
+
+  // 1시간 세션 발급
+  const sessionToken = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  await env.DB.prepare('INSERT INTO admin_sessions (id, user_id, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(crypto.randomUUID(), userId, sessionToken, expiresAt, new Date().toISOString()).run();
+
+  return json({ success: true, adminSession: sessionToken, expiresAt });
+}
 
 async function handleAdminStats(env: Env): Promise<Response> {
   const today = new Date().toISOString().slice(0, 10);

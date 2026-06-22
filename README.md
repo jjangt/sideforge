@@ -116,6 +116,63 @@ sideforge/
 - [Target Users](docs/business/target-users.md)
 - [Monetization](docs/business/monetization.md)
 
+## 환경변수
+
+`.env.example`을 복사하여 `.env` 생성:
+
+```bash
+copy .env.example .env
+```
+
+| 변수 | 설명 | 기본값 |
+|------|------|--------|
+| `AI_PROVIDER` | 사용할 AI (mock / openai / claude) | mock |
+| `OPENAI_API_KEY` | OpenAI API 키 | - |
+| `OPENAI_MODEL` | 모델명 | gpt-4o |
+| `CLAUDE_API_KEY` | Anthropic API 키 | - |
+| `CLAUDE_MODEL` | 모델명 | claude-3-5-sonnet |
+| `API_URL` | 백엔드 URL (백엔드 구축 시) | - |
+
+## AI Provider 연동
+
+현재 Mock Provider(미리 정의된 데이터)로 동작합니다.
+
+실제 AI 연동 시:
+1. `src/services/ai/providers/{name}.provider.ts` 생성
+2. `AIProvider` 인터페이스의 7개 메서드 구현
+3. `src/services/ai/provider-factory.ts`에 등록
+4. `.env`에 API 키 설정
+5. 서버 재시작
+
+→ 상세 가이드: [docs/api/ai-provider.md](docs/api/ai-provider.md)
+
+## 실행 환경별 명령어
+
+| 환경 | 명령어 | 접속 |
+|------|--------|------|
+| 웹 (개발) | `npx expo start --web --port 5847 --clear` | http://localhost:5847 |
+| Android | `npx expo start --android` | 에뮬레이터 |
+| iOS | `npx expo start --ios` | 시뮬레이터 (macOS) |
+| 모바일 실기기 | `npx expo start` → QR 스캔 | Expo Go 앱 |
+| 웹 빌드 | `npm run build:web` | dist/ 폴더 생성 |
+
+## 배포
+
+- **웹**: GitHub Actions → Cloudflare Pages 자동 배포
+  - `develop` push → 스테이징
+  - `main` push → 운영
+- **모바일**: `npx eas build --platform android/ios`
+
+## Troubleshooting
+
+| 문제 | 해결 |
+|------|------|
+| 화면 안 보임 / 스타일 안 먹힘 | `npx expo start --web --port 5847 --clear` |
+| Cannot find module 'babel-preset-expo' | `npm install` 재실행 |
+| Cannot manually set color scheme | `tailwind.config.js`에 `darkMode: "class"` 확인 |
+| ConfigError: package.json not found | 반드시 `cd D:\sideline\sideforge`에서 실행 |
+| TypeScript 에러 확인 | `npx tsc --noEmit` |
+
 ## 브랜치 전략
 
 ```

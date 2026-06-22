@@ -17,6 +17,37 @@ git push origin main     →  sideforge.pages.dev (자동)
 
 별도 CI/CD 설정 없이 GitHub push만 하면 Cloudflare가 자동 빌드 & 배포합니다.
 
+## 배포 트리거가 안 될 때
+
+가끔 push 후에도 Cloudflare 빌드가 트리거되지 않을 수 있습니다.
+
+### 방법 1: 빈 커밋으로 재트리거
+
+```bash
+git commit --allow-empty -m "chore: trigger cloudflare build"
+git push origin develop   # 또는 main
+```
+
+### 방법 2: Cloudflare 대시보드에서 수동 배포
+
+1. Cloudflare 대시보드 → Workers & Pages → `sideforge`
+2. Deployments 탭
+3. "Create deployment" 또는 가장 최근 배포의 "Retry" 버튼 클릭
+
+### 방법 3: Preview 배포 설정 확인
+
+`develop` 브랜치 배포가 안 되는 경우:
+1. Pages → Settings → Builds & deployments
+2. "Preview deployments" 항목 확인
+3. **"All non-production branches"** 로 설정되어 있어야 함
+4. "None"으로 되어있으면 변경 필요
+
+### 배포 상태 확인
+
+- Cloudflare 대시보드 → Deployments 탭에서 빌드 로그 확인
+- 성공: 초록색 체크 + URL 표시
+- 실패: 빨간색 + 에러 로그 확인 가능
+
 ## Cloudflare Pages 빌드 설정
 
 | 항목 | 값 |

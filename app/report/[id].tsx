@@ -104,12 +104,12 @@ export default function ReportScreen() {
         <Section title="강점" icon="💪" className="mb-4">
           {analysis.strengths?.length > 0 ? (
             <View className="gap-3">
-              {analysis.strengths.map((s: string, i: number) => (
+              {analysis.strengths.map((s: any, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
                   <View className="w-6 h-6 bg-brand-success/20 rounded-full items-center justify-center mt-0.5">
                     <Text className="text-brand-success text-xs">✓</Text>
                   </View>
-                  <Text className="text-brand-text text-sm flex-1 leading-6">{s}</Text>
+                  <Text className="text-brand-text text-sm flex-1 leading-6">{typeof s === 'string' ? s : JSON.stringify(s)}</Text>
                 </View>
               ))}
             </View>
@@ -122,12 +122,12 @@ export default function ReportScreen() {
         <Section title="단점" icon="⚠️" className="mb-4">
           {analysis.weaknesses?.length > 0 ? (
             <View className="gap-3">
-              {analysis.weaknesses.map((w: string, i: number) => (
+              {analysis.weaknesses.map((w: any, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
                   <View className="w-6 h-6 bg-brand-warning/20 rounded-full items-center justify-center mt-0.5">
                     <Text className="text-brand-warning text-xs">!</Text>
                   </View>
-                  <Text className="text-brand-text text-sm flex-1 leading-6">{w}</Text>
+                  <Text className="text-brand-text text-sm flex-1 leading-6">{typeof w === 'string' ? w : JSON.stringify(w)}</Text>
                 </View>
               ))}
             </View>
@@ -144,13 +144,13 @@ export default function ReportScreen() {
             {...(analysis.actionsLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.actions?.map((a: string, i: number) => (
+              {analysis.actions?.map((a: any, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
                   <View className="flex-row items-start gap-3">
                     <View className="w-7 h-7 bg-brand-primary rounded-lg items-center justify-center">
                       <Text className="text-white text-xs font-bold">{i + 1}</Text>
                     </View>
-                    <Text className="text-brand-text text-sm flex-1 leading-6">{a}</Text>
+                    <Text className="text-brand-text text-sm flex-1 leading-6">{typeof a === 'string' ? a : JSON.stringify(a)}</Text>
                   </View>
                 </Card>
               ))}
@@ -182,10 +182,10 @@ export default function ReportScreen() {
             {...(analysis.contentIdeasLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.contentIdeas?.map((c: string, i: number) => (
+              {analysis.contentIdeas?.map((c: any, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
                   <Text className="text-brand-primary-light text-sm">→</Text>
-                  <Text className="text-brand-text text-sm flex-1 leading-6">{c}</Text>
+                  <Text className="text-brand-text text-sm flex-1 leading-6">{typeof c === 'string' ? c : JSON.stringify(c)}</Text>
                 </View>
               ))}
               {analysis.contentIdeasLocked && (

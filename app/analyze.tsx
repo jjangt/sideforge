@@ -7,7 +7,7 @@ import { navigate, ROUTES } from '../src/lib';
 import { toast } from '../src/lib';
 
 const PLATFORMS = [
-  { id: 'youtube', icon: '▶️', name: 'YouTube', available: true, placeholder: '@채널명 또는 채널 URL', hint: '예: @MrBeast, @limahni 또는 https://youtube.com/@채널명' },
+  { id: 'youtube', icon: '▶️', name: 'YouTube', available: true, placeholder: '@채널명 또는 채널 URL', hint: '@채널명 또는 https://youtube.com/@채널명 형식으로 입력' },
   { id: 'blog', icon: '📝', name: 'Blog', available: false, placeholder: 'https://blog.naver.com/아이디', hint: '네이버, 티스토리, Medium, WordPress, Velog' },
   { id: 'instagram', icon: '📸', name: 'Instagram', available: false, placeholder: 'https://instagram.com/아이디', hint: 'instagram.com/아이디' },
 ];

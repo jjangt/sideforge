@@ -326,6 +326,7 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
  * 동일 카테고리 인기/급상승 영상 검색
  * 채널 영상의 카테고리 + 키워드 기반 → YouTube Search API 호출
  * 분석 대상 채널의 영상은 제외
+ * 채널 handle을 실제로 조회하여 AI에 정확한 URL 제공
  */
 async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: string): Promise<any[]> {
   try {
@@ -349,12 +350,18 @@ async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: stri
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds}&key=${apiKey}`
     );
     const videoData = await videoRes.json() as any;
+    if (!videoData.items?.length) return [];
 
-    return (videoData.items || []).map((v: any) => ({
+    // 채널 handle 조회를 위해 고유 channelId 수집
+    const uniqueChannelIds = [...new Set(videoData.items.map((v: any) => v.snippet.channelId))] as string[];
+    const channelHandles = await fetchChannelHandles(uniqueChannelIds, apiKey);
+
+    return videoData.items.map((v: any) => ({
       id: v.id,
       title: v.snippet.title,
       channelTitle: v.snippet.channelTitle,
-      channelHandle: v.snippet.channelId,
+      channelId: v.snippet.channelId,
+      channelHandle: channelHandles[v.snippet.channelId] || '',
       views: Number(v.statistics.viewCount || 0),
       likes: Number(v.statistics.likeCount || 0),
       comments: Number(v.statistics.commentCount || 0),
@@ -363,6 +370,20 @@ async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: stri
   } catch {
     return [];
   }
+}
+
+/** 채널 ID 목록으로부터 실제 handle(@xxx) 조회 */
+async function fetchChannelHandles(channelIds: string[], apiKey: string): Promise<Record<string, string>> {
+  if (!channelIds.length) return {};
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelIds.join(',')}&key=${apiKey}`
+  );
+  const data = await res.json() as any;
+  const map: Record<string, string> = {};
+  for (const ch of (data.items || [])) {
+    map[ch.id] = ch.snippet.customUrl || '';
+  }
+  return map;
 }
 
 /** 채널명/설명에서 핵심 키워드 추출 */

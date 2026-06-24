@@ -147,7 +147,7 @@ export default function ReportScreen() {
             {...(analysis.actionsLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.actions?.filter((a: any) => typeof a === 'string' && !a.includes('[') && a.trim()).map((a: any, i: number) => (
+              {analysis.actions?.filter((a: any) => typeof a === 'string' && a.trim()).map((a: any, i: number) => (
                 <Card key={i} variant="glass" className="p-4">
                   <View className="flex-row items-start gap-3">
                     <View className="w-7 h-7 bg-brand-primary rounded-lg items-center justify-center">
@@ -185,7 +185,7 @@ export default function ReportScreen() {
             {...(analysis.contentIdeasLocked ? { badge: 'Plus 플랜 이상' } : {})}
           >
             <View className="gap-3">
-              {analysis.contentIdeas?.filter((c: any) => typeof c === 'string' && !c.includes('[') && c.trim()).map((c: any, i: number) => (
+              {analysis.contentIdeas?.filter((c: any) => typeof c === 'string' && c.trim()).map((c: any, i: number) => (
                 <View key={i} className="flex-row items-start gap-3">
                   <Text className="text-brand-primary-light text-sm">→</Text>
                   <Text className="text-brand-text text-sm flex-1 leading-6">{typeof c === 'string' ? c : JSON.stringify(c)}</Text>

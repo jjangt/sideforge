@@ -76,7 +76,8 @@ export default function ReportScreen() {
           <Section title="최근 영상 성과" icon="📊" className="mb-4">
             <View className="gap-3">
               {data.videos.slice(0, 3).map((v: any, i: number) => {
-                const commentInfo = analysis.commentSummary?.find((c: any) => c.videoTitle && v.title?.includes(c.videoTitle.slice(0, 10)));
+                const hasRealComments = v.topComments?.length > 0;
+                const commentInfo = hasRealComments ? analysis.commentSummary?.find((c: any) => c.videoTitle && v.title?.includes(c.videoTitle.slice(0, 10))) : null;
                 return (
                   <Card key={i} variant="glass" className="p-4">
                     <Text

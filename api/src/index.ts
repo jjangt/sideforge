@@ -441,14 +441,25 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
     const analysis = match ? JSON.parse(match[0]) : fallbackAnalysis();
     // 벤치마킹 검증: trending 데이터에 실제 존재하는 채널만 유지
     if (analysis.benchmarks?.length && trendingVideos.length) {
-      const validNames = new Set(trendingVideos.map(v => v.channelTitle));
-      const validUrls = new Set(trendingVideos.map(v => v.channelHandle).filter(Boolean));
-      analysis.benchmarks = analysis.benchmarks.filter((b: any) =>
-        validNames.has(b.name) || validUrls.has(b.url) || trendingVideos.some(v => b.url?.includes(v.channelHandle))
-      );
+      const validNames = trendingVideos.map(v => v.channelTitle.toLowerCase());
+      const validHandles = trendingVideos.map(v => v.channelHandle).filter(Boolean);
+      analysis.benchmarks = analysis.benchmarks.filter((b: any) => {
+        if (!b.name) return false;
+        const nameLower = b.name.toLowerCase();
+        return validNames.some(n => n.includes(nameLower) || nameLower.includes(n))
+          || validHandles.some(h => b.url?.includes(h));
+      });
     } else if (analysis.benchmarks?.length && !trendingVideos.length) {
-      // trending 데이터가 없으면 AI가 만들어낸 가짜 벤치마킹 전부 제거
       analysis.benchmarks = [];
+    }
+    // 댓글 요약 검증: 실제 댓글이 없는 영상의 commentSummary 제거
+    if (analysis.commentSummary?.length && videos.length) {
+      const videosWithComments = new Set(
+        videos.slice(0, 3).filter((v: any) => v.topComments?.length > 0).map((v: any) => v.title)
+      );
+      analysis.commentSummary = analysis.commentSummary.filter((c: any) =>
+        c.videoTitle && [...videosWithComments].some(t => t.includes(c.videoTitle.slice(0, 10)) || c.videoTitle.includes(t.slice(0, 10)))
+      );
     }
     return analysis;
   } catch {

@@ -47,8 +47,8 @@ function preAnalyze(channel: any, videos: any[]) {
     issues.push(`좋아요 비율(${likeRatio}%) 개선 필요: 업계 평균(3%) 미달. 시청자 참여 유도(CTA) 강화 또는 콘텐츠 만족도 점검 필요`);
   }
 
-  // 구독자 대비 조회수
-  if (channel.subscribers > 0 && avgViews > 0) {
+  // 구독자 대비 조회수 (구독자 100명 이상일 때만 의미 있음)
+  if (channel.subscribers >= 100 && avgViews > 0) {
     const ratio = avgViews / channel.subscribers;
     if (ratio > 1) {
       facts.push(`폭발적 도달률: 평균 조회수(${fmt(avgViews)})가 구독자 수(${fmt(channel.subscribers)})를 초과. 비구독자 유입이 매우 활발`);
@@ -57,6 +57,8 @@ function preAnalyze(channel: any, videos: any[]) {
     } else if (ratio < 0.03 && channel.subscribers > 1000) {
       issues.push(`극히 낮은 도달률: 평균 조회수(${fmt(avgViews)})가 구독자(${fmt(channel.subscribers)}) 대비 ${(ratio * 100).toFixed(1)}%. 구독자에게조차 영상이 노출되지 않고 있음`);
     }
+  } else if (channel.subscribers < 100) {
+    issues.push(`초기 성장 단계: 구독자 ${channel.subscribers}명으로 아직 채널 인지도가 매우 낮음. 검색 최적화와 외부 홍보가 필요한 단계`);
   }
 
   // 베스트 vs 평균
@@ -74,10 +76,14 @@ export function buildYouTubePrompt(channel: any, videos: any[], trendingVideos: 
     `- "${v.title}" (조회수: ${fmt(v.views)}, 좋아요: ${fmt(v.likes)}, 댓글: ${fmt(v.comments)}, 게시일: ${v.publishedAt?.slice(0, 10)})`
   ).join('\n');
 
-  // 댓글 데이터 (상위 3개 영상)
-  const commentSection = videos.slice(0, 3).filter((v: any) => v.topComments?.length > 0).map((v: any) =>
-    `영상 "${v.title}"의 인기 댓글:\n${v.topComments.map((c: string) => `  - "${c}"`).join('\n')}`
-  ).join('\n\n');
+  const hasComments = videos.slice(0, 3).some((v: any) => v.topComments?.length > 0);
+
+  // 댓글 데이터 (상위 3개 영상, 실제 시청자 댓글이 있는 경우만)
+  const commentSection = hasComments
+    ? videos.slice(0, 3).filter((v: any) => v.topComments?.length > 0).map((v: any) =>
+        `영상 "${v.title}"의 인기 댓글:\n${v.topComments.map((c: string) => `  - "${c}"`).join('\n')}`
+      ).join('\n\n')
+    : '';
 
   const trendingSection = trendingVideos.length > 0 ? `
 ■ 동일 카테고리 인기 영상 (다른 채널):
@@ -112,7 +118,7 @@ ${trendingSection}
 5. weaknesses: 위 "확인된 문제점"을 바탕으로 자연스러운 문장 작성 + 댓글에서 발견된 부정적 피드백이 있으면 추가.
 6. actions: 각 weakness에 대한 구체적 해결책. 할 일 + 이유 + 기대 효과.
 7. contentIdeas: 이 채널 주제 범위 내에서 아직 안 다룬 새 소재. 댓글에서 시청자가 요청하는 내용이 있으면 우선 반영. 각각 "제안. 근거: 이유와 기대효과" 형식.
-8. commentSummary: 위 댓글 데이터를 분석하여 영상별 시청자 반응 요약. 각 영상에 대해 "영상제목: 댓글 분위기 한줄 요약 + 시청자가 주로 언급하는 키워드/요청" 형식. 댓글이 없으면 빈 배열.
+8. commentSummary: ${hasComments ? '위 댓글 데이터를 분석하여 영상별 시청자 반응 요약. 각 영상에 대해 "영상제목: 댓글 분위기 한줄 요약 + 시청자가 주로 언급하는 키워드/요청" 형식.' : '시청자 댓글 데이터가 없으므로 빈 배열로 작성.'}
 9. benchmarks: 위 인기 영상의 채널만 사용. URL은 위 데이터 그대로 복사. 인기 영상 없으면 빈 배열. reason은 구체적 영상+수치+배울 점.
 
 JSON만 응답:

@@ -355,92 +355,72 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
  */
 async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: string): Promise<any[]> {
   try {
-    // YouTube 카테고리 ID → 장르명 매핑
     const categoryMap: Record<string, string> = {
-      '1': 'Film & Animation', '2': 'Cars', '10': 'Music', '15': 'Pets',
-      '17': 'Sports', '20': 'Gaming', '22': 'Vlog', '23': 'Comedy',
-      '24': 'Entertainment', '25': 'News', '26': 'Howto', '27': 'Education',
-      '28': 'Science', '29': 'Activism',
+      '1': '애니메이션', '2': '자동차', '10': '음악', '15': '반려동물',
+      '17': '스포츠', '20': '게임', '22': '브이로그', '23': '코미디',
+      '24': '엔터테인먼트', '25': '뉴스', '26': '노하우', '27': '교육',
+      '28': '과학기술', '29': '사회활동',
     };
-
-    // 영상들의 categoryId에서 가장 많은 카테고리 추출
     const catCounts: Record<string, number> = {};
     videos.forEach(v => { if (v.categoryId) catCounts[v.categoryId] = (catCounts[v.categoryId] || 0) + 1; });
     const topCategoryId = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
     const categoryName = categoryMap[topCategoryId] || '';
 
-    // 검색 키워드: 카테고리 + 태그에서 추출한 장르 키워드
-    const allTags = videos.flatMap(v => v.tags || []).slice(0, 20);
-    const tagKeywords = allTags
-      .filter((t: string) => t.length > 1 && t.length < 15)
-      .slice(0, 3)
-      .join(' ');
-
-    // 채널명 단어들 (필터용)
+    const allTags = videos.flatMap(v => v.tags || []);
+    const genreTags = allTags.filter((t: string) => t.length >= 2 && t.length <= 20).slice(0, 5);
     const channelNameWords = channel.title.toLowerCase().replace(/[^\w\uAC00-\uD7AF\s]/g, '').split(/\s+/).filter((w: string) => w.length > 1);
 
-    // 검색 쿼리: 카테고리명 + 태그 키워드 (or 채널 설명에서 주제어)
-    const searchQuery = `${categoryName} ${tagKeywords}`.trim() || channel.description?.slice(0, 50) || 'music';
+    const searchQuery = genreTags.length > 0
+      ? `${categoryName} ${genreTags.slice(0, 3).join(' ')}`.trim()
+      : categoryName || channel.description?.slice(0, 30) || '';
+    if (!searchQuery) return [];
 
-    const channelSearchRes = await fetch(
+    const searchRes = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=channel&maxResults=10&key=${apiKey}`
     );
-    const channelSearchData = await channelSearchRes.json() as any;
-
-    // 분석 대상 제외 + 이름 비슷한 채널 제외
-    const foundChannels = (channelSearchData.items || []).filter((i: any) => {
+    const searchData = await searchRes.json() as any;
+    const candidates = (searchData.items || []).filter((i: any) => {
       if (i.snippet.channelId === channel.id) return false;
       const name = i.snippet.title.toLowerCase();
       return !channelNameWords.some((w: string) => w.length > 1 && name.includes(w));
     });
-    if (!foundChannels.length) return [];
+    if (!candidates.length) return [];
 
-    const channelIds = foundChannels.slice(0, 6).map((i: any) => i.snippet.channelId).join(',');
-    const chDetailRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelIds}&key=${apiKey}`
-    );
-    const chDetailData = await chDetailRes.json() as any;
-    if (!chDetailData.items?.length) return [];
-
-    // 롤모델: 최소 구독자 1만 이상
-    const minSubscribers = Math.max(10000, channel.subscribers * 100);
-    const betterChannels = chDetailData.items
-      .filter((ch: any) => Number(ch.statistics.subscriberCount || 0) >= minSubscribers)
+    const chIds = candidates.slice(0, 6).map((i: any) => i.snippet.channelId).join(',');
+    const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chIds}&key=${apiKey}`);
+    const chData = await chRes.json() as any;
+    const minSubs = Math.max(10000, channel.subscribers * 50);
+    const goodChannels = (chData.items || [])
+      .filter((ch: any) => Number(ch.statistics.subscriberCount || 0) >= minSubs)
       .sort((a: any, b: any) => Number(b.statistics.subscriberCount || 0) - Number(a.statistics.subscriberCount || 0))
-      .slice(0, 3);
+      .slice(0, 2);
+    if (!goodChannels.length) return [];
 
-    if (!betterChannels.length) return [];
-
-    // 각 채널의 인기 영상 1개씩
-    const results = await Promise.all(betterChannels.map(async (ch: any) => {
+    const results = await Promise.all(goodChannels.map(async (ch: any) => {
       try {
         const uploadsId = 'UU' + ch.id.slice(2);
         const listRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=5&key=${apiKey}`);
         const listData = await listRes.json() as any;
         if (!listData.items?.length) return null;
-
         const vidIds = listData.items.map((i: any) => i.contentDetails.videoId).join(',');
-        const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${vidIds}&key=${apiKey}`);
+        const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${vidIds}&key=${apiKey}`);
         const vidData = await vidRes.json() as any;
         if (!vidData.items?.length) return null;
-        const bestVid = vidData.items.reduce((best: any, v: any) =>
-          Number(v.statistics.viewCount || 0) > Number(best.statistics.viewCount || 0) ? v : best, vidData.items[0]);
-
+        const channelVideos = vidData.items.map((v: any) => ({
+          title: v.snippet.title,
+          description: (v.snippet.description || '').slice(0, 150),
+          duration: parseDuration(v.contentDetails?.duration || ''),
+          views: Number(v.statistics.viewCount || 0),
+          likes: Number(v.statistics.likeCount || 0),
+        }));
         return {
-          id: bestVid.id,
-          title: bestVid.snippet.title,
           channelTitle: ch.snippet.title,
-          channelId: ch.id,
           channelHandle: ch.snippet.customUrl || '',
           channelSubscribers: Number(ch.statistics.subscriberCount || 0),
-          views: Number(bestVid.statistics.viewCount || 0),
-          likes: Number(bestVid.statistics.likeCount || 0),
-          comments: Number(bestVid.statistics.commentCount || 0),
-          publishedAt: bestVid.snippet.publishedAt,
+          videos: channelVideos,
         };
       } catch { return null; }
     }));
-
     return results.filter(Boolean) as any[];
   } catch {
     return [];
@@ -495,8 +475,18 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
 
   try {
     let text = (result.response || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    if (!text || text.length < 10) {
+      // 70B 실패 시 17B로 재시도
+      const retry = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 3000 });
+      text = (retry.response || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    }
     const match = text.match(/\{[\s\S]*\}/);
-    const analysis = match ? JSON.parse(match[0]) : fallbackAnalysis();
+    if (!match) return fallbackAnalysis();
+    const analysis = JSON.parse(match[0]);
+    // 배열 필드 보정 (AI가 문자열로 반환하는 경우 방어)
+    ['strengths','weaknesses','actions','contentIdeas','viralFormula','commentSummary','benchmarks'].forEach(k => {
+      if (analysis[k] && !Array.isArray(analysis[k])) analysis[k] = [analysis[k]];
+    });
     // 벤치마킹 검증: trending 데이터에 실제 존재하는 채널만 유지
     if (analysis.benchmarks?.length && trendingVideos.length) {
       const validNames = trendingVideos.map(v => v.channelTitle.toLowerCase());

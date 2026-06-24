@@ -113,6 +113,24 @@ export default function ReportScreen() {
           </Section>
         )}
 
+        {/* 🔥 바이럴 공식 */}
+        {analysis.viralFormula?.length > 0 && analysis.viralFormula.some((v: any) => typeof v === 'string' && v.trim()) && (
+          <Section title="바이럴 공식" icon="🔥" className="mb-4">
+            <View className="gap-3">
+              {analysis.viralFormula.filter((v: any) => typeof v === 'string' && v.trim()).map((item: string, i: number) => (
+                <Card key={i} variant="glass" className="p-4">
+                  <View className="flex-row items-start gap-3">
+                    <View className="w-7 h-7 bg-brand-warning/20 rounded-lg items-center justify-center">
+                      <Text className="text-brand-warning text-xs font-bold">📊</Text>
+                    </View>
+                    <Text className="text-brand-text text-sm flex-1 leading-6">{item}</Text>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          </Section>
+        )}
+
         {/* 강점 */}
         <Section title="강점" icon="💪" className="mb-4">
           {analysis.strengths?.length > 0 ? (

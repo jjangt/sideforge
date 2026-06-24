@@ -75,30 +75,39 @@ export default function ReportScreen() {
         {data.videos?.length > 0 && (
           <Section title="최근 영상 성과" icon="📊" className="mb-4">
             <View className="gap-3">
-              {data.videos.slice(0, 3).map((v: any, i: number) => (
-                <Card key={i} variant="glass" className="p-4">
-                  <Text
-                    className="text-brand-primary-light text-sm font-bold mb-2"
-                    onPress={() => (window as any).open?.(`https://youtube.com/watch?v=${v.id}`, '_blank')}
-                  >
-                    {v.title} ↗
-                  </Text>
-                  <View className="flex-row gap-4">
-                    <View>
-                      <Text className="text-brand-muted text-xs">조회수</Text>
-                      <Text className="text-brand-text text-sm font-bold">{v.views?.toLocaleString()}</Text>
+              {data.videos.slice(0, 3).map((v: any, i: number) => {
+                const commentInfo = analysis.commentSummary?.find((c: any) => c.videoTitle && v.title?.includes(c.videoTitle.slice(0, 10)));
+                return (
+                  <Card key={i} variant="glass" className="p-4">
+                    <Text
+                      className="text-brand-primary-light text-sm font-bold mb-2"
+                      onPress={() => (window as any).open?.(`https://youtube.com/watch?v=${v.id}`, '_blank')}
+                    >
+                      {v.title} ↗
+                    </Text>
+                    <View className="flex-row gap-4 mb-2">
+                      <View>
+                        <Text className="text-brand-muted text-xs">조회수</Text>
+                        <Text className="text-brand-text text-sm font-bold">{v.views?.toLocaleString()}</Text>
+                      </View>
+                      <View>
+                        <Text className="text-brand-muted text-xs">좋아요</Text>
+                        <Text className="text-brand-text text-sm font-bold">{v.likes?.toLocaleString()}</Text>
+                      </View>
+                      <View>
+                        <Text className="text-brand-muted text-xs">댓글</Text>
+                        <Text className="text-brand-text text-sm font-bold">{v.comments?.toLocaleString()}</Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text className="text-brand-muted text-xs">좋아요</Text>
-                      <Text className="text-brand-text text-sm font-bold">{v.likes?.toLocaleString()}</Text>
-                    </View>
-                    <View>
-                      <Text className="text-brand-muted text-xs">댓글</Text>
-                      <Text className="text-brand-text text-sm font-bold">{v.comments?.toLocaleString()}</Text>
-                    </View>
-                  </View>
-                </Card>
-              ))}
+                    {commentInfo?.summary && (
+                      <View className="bg-brand-surface-light rounded-lg p-3 mt-1">
+                        <Text className="text-brand-muted text-xs mb-1">💬 시청자 반응</Text>
+                        <Text className="text-brand-text text-xs leading-5">{commentInfo.summary}</Text>
+                      </View>
+                    )}
+                  </Card>
+                );
+              })}
             </View>
           </Section>
         )}

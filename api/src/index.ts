@@ -301,7 +301,7 @@ async function fetchRecentVideos(channelId: string, apiKey: string) {
   const videoRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${ids}&key=${apiKey}`);
   const videoData = await videoRes.json() as any;
 
-  return (videoData.items || []).map((v: any) => ({
+  const videos = (videoData.items || []).map((v: any) => ({
     id: v.id,
     title: v.snippet.title,
     publishedAt: v.snippet.publishedAt,
@@ -312,7 +312,22 @@ async function fetchRecentVideos(channelId: string, apiKey: string) {
     categoryId: v.snippet.categoryId || '',
     tags: v.snippet.tags || [],
     description: (v.snippet.description || '').slice(0, 200),
+    topComments: [] as string[],
   }));
+
+  // 상위 3개 영상의 인기 댓글 수집
+  const top3 = videos.slice(0, 3);
+  await Promise.all(top3.map(async (v: any) => {
+    try {
+      const cRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${v.id}&order=relevance&maxResults=7&key=${apiKey}`);
+      const cData = await cRes.json() as any;
+      v.topComments = (cData.items || []).map((c: any) => c.snippet.topLevelComment.snippet.textDisplay.replace(/<[^>]*>/g, '').slice(0, 100));
+    } catch {
+      v.topComments = [];
+    }
+  }));
+
+  return videos;
 }
 
 async function resolveChannelId(handle: string, apiKey: string): Promise<string> {
@@ -409,12 +424,24 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
   const { buildYouTubePrompt } = await import('./prompts/youtube');
   const prompt = buildYouTubePrompt(channel, videos, trendingVideos);
 
-  const result = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 2048 });
+  const result = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 3000 });
 
   try {
-    const text = result.response || '';
+    let text = (result.response || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
     const match = text.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : fallbackAnalysis();
+    const analysis = match ? JSON.parse(match[0]) : fallbackAnalysis();
+    // 벤치마킹 검증: trending 데이터에 실제 존재하는 채널만 유지
+    if (analysis.benchmarks?.length && trendingVideos.length) {
+      const validNames = new Set(trendingVideos.map(v => v.channelTitle));
+      const validUrls = new Set(trendingVideos.map(v => v.channelHandle).filter(Boolean));
+      analysis.benchmarks = analysis.benchmarks.filter((b: any) =>
+        validNames.has(b.name) || validUrls.has(b.url) || trendingVideos.some(v => b.url?.includes(v.channelHandle))
+      );
+    } else if (analysis.benchmarks?.length && !trendingVideos.length) {
+      // trending 데이터가 없으면 AI가 만들어낸 가짜 벤치마킹 전부 제거
+      analysis.benchmarks = [];
+    }
+    return analysis;
   } catch {
     return fallbackAnalysis();
   }

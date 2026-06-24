@@ -226,8 +226,14 @@ async function handleAdminUsers(env: Env): Promise<Response> {
 // ─── YouTube Data API ─────────────────────────────────────────────────────────
 
 function extractChannelId(url: string): string | null {
-  // URL 정규화: 공백 제거, www. 포함 여부 무관하게 처리
   const cleaned = url.trim();
+  
+  // @handle 직접 입력 (예: @MrBeast, @limahni)
+  if (cleaned.startsWith('@')) {
+    return cleaned.slice(1);
+  }
+  
+  // URL 형식
   const patterns = [
     /youtube\.com\/@([^/?]+)/,
     /youtube\.com\/channel\/([^/?]+)/,
@@ -315,13 +321,16 @@ async function fetchRecentVideos(channelId: string, apiKey: string) {
     topComments: [] as string[],
   }));
 
-  // 상위 3개 영상의 인기 댓글 수집
+  // 상위 3개 영상의 인기 댓글 수집 (채널 주인 댓글 제외)
   const top3 = videos.slice(0, 3);
   await Promise.all(top3.map(async (v: any) => {
     try {
-      const cRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${v.id}&order=relevance&maxResults=7&key=${apiKey}`);
+      const cRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${v.id}&order=relevance&maxResults=12&key=${apiKey}`);
       const cData = await cRes.json() as any;
-      v.topComments = (cData.items || []).map((c: any) => c.snippet.topLevelComment.snippet.textDisplay.replace(/<[^>]*>/g, '').slice(0, 100));
+      v.topComments = (cData.items || [])
+        .filter((c: any) => c.snippet.topLevelComment.snippet.authorChannelId?.value !== realId)
+        .slice(0, 7)
+        .map((c: any) => c.snippet.topLevelComment.snippet.textDisplay.replace(/<[^>]*>/g, '').slice(0, 100));
     } catch {
       v.topComments = [];
     }

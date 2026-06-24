@@ -324,22 +324,27 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
 
 /**
  * 동일 카테고리 인기/급상승 영상 검색
- * 채널 설명 + 영상 제목에서 키워드 추출 → YouTube Search API 호출
+ * 채널 영상의 카테고리 + 키워드 기반 → YouTube Search API 호출
+ * 분석 대상 채널의 영상은 제외
  */
-async function fetchTrendingInCategory(channel: any, apiKey: string): Promise<any[]> {
+async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: string): Promise<any[]> {
   try {
-    // 채널 제목/설명에서 키워드 추출 (1~2단어)
-    const keywords = extractKeywords(channel.title, channel.description);
+    // 영상 제목 + 채널 설명에서 키워드 추출
+    const videoTitles = videos.slice(0, 5).map(v => v.title).join(' ');
+    const keywords = extractKeywords(channel.title, `${channel.description || ''} ${videoTitles}`);
     if (!keywords) return [];
 
     const searchRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(keywords)}&type=video&order=viewCount&maxResults=5&publishedAfter=${getThreeMonthsAgo()}&key=${apiKey}`
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(keywords)}&type=video&order=viewCount&maxResults=8&publishedAfter=${getThreeMonthsAgo()}&key=${apiKey}`
     );
     const searchData = await searchRes.json() as any;
     if (!searchData.items?.length) return [];
 
-    // 영상 상세 정보 가져오기
-    const videoIds = searchData.items.map((i: any) => i.id.videoId).join(',');
+    // 분석 대상 채널의 영상 제외
+    const filteredItems = searchData.items.filter((i: any) => i.snippet.channelId !== channel.id);
+    if (!filteredItems.length) return [];
+
+    const videoIds = filteredItems.slice(0, 5).map((i: any) => i.id.videoId).join(',');
     const videoRes = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds}&key=${apiKey}`
     );
@@ -349,6 +354,7 @@ async function fetchTrendingInCategory(channel: any, apiKey: string): Promise<an
       id: v.id,
       title: v.snippet.title,
       channelTitle: v.snippet.channelTitle,
+      channelHandle: v.snippet.channelId,
       views: Number(v.statistics.viewCount || 0),
       likes: Number(v.statistics.likeCount || 0),
       comments: Number(v.statistics.commentCount || 0),

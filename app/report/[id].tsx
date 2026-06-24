@@ -232,7 +232,7 @@ export default function ReportScreen() {
                 <Card key={i} variant="glass" className="p-4">
                   <Text
                     className="text-brand-primary-light font-bold text-sm mb-2"
-                    onPress={() => b.url && (window as any).open?.(`https://${b.url}`, '_blank')}
+                    onPress={() => b.url && (window as any).open?.(normalizeYouTubeUrl(b.url), '_blank')}
                   >
                     {typeof b === 'string' ? b : (b.name || 'Channel')} ↗
                   </Text>
@@ -304,4 +304,10 @@ function scoreVariant(score: number): 'success' | 'warning' | 'error' {
   if (score >= 70) return 'success';
   if (score >= 40) return 'warning';
   return 'error';
+}
+
+function normalizeYouTubeUrl(url: string): string {
+  // 프로토콜 제거 후 재구성
+  const cleaned = url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  return `https://www.${cleaned}`;
 }

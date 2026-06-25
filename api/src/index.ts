@@ -9,6 +9,7 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   ADMIN_EMAILS: string;
   ENVIRONMENT: string;
+  GEMINI_API_KEY: string;
 }
 
 export default {
@@ -110,7 +111,7 @@ async function handleYouTubeAnalysis(request: Request, env: Env, userId: string)
   const videos = await fetchRecentVideos(channelData.id, env.YOUTUBE_API_KEY);
   // 동일 카테고리 인기 영상 검색 (벤치마킹용)
   const trendingVideos = await fetchTrendingInCategory(channelData, videos, env.YOUTUBE_API_KEY);
-  const analysis = await analyzeWithAI(env.AI, channelData, videos, trendingVideos);
+  const analysis = await analyzeWithAI(env.AI, channelData, videos, trendingVideos, env);
 
   const reportId = crypto.randomUUID();
   const fullData = { channel: channelData, videos, trendingVideos, analysis };
@@ -467,23 +468,25 @@ function parseDuration(iso: string): number {
 
 // ─── AI Analysis ──────────────────────────────────────────────────────────────
 
-async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideos: any[]) {
+async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideos: any[], env?: any) {
   const { buildYouTubePrompt } = await import('./prompts/youtube');
   const prompt = buildYouTubePrompt(channel, videos, trendingVideos);
 
-  const result = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: [{ role: 'user', content: prompt }], max_tokens: 3000 });
-
   try {
-    let text = (result.response || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-    if (!text || text.length < 10) {
-      // 70B 실패 시 17B로 재시도
-      const retry = await ai.run('@cf/meta/llama-4-scout-17b-16e-instruct', { messages: [{ role: 'user', content: prompt }], max_tokens: 3000 });
-      text = (retry.response || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-    }
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 3000 } }),
+      }
+    );
+    const geminiData = await geminiRes.json() as any;
+    let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return fallbackAnalysis();
     const analysis = JSON.parse(match[0]);
-    // 배열 필드 보정 (AI가 문자열로 반환하는 경우 방어)
     ['strengths','weaknesses','actions','contentIdeas','viralFormula','commentSummary','benchmarks'].forEach(k => {
       if (analysis[k] && !Array.isArray(analysis[k])) analysis[k] = [analysis[k]];
     });

@@ -1,11 +1,11 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare
 
 on:
   push:
     branches: [main, develop]
 
 jobs:
-  deploy:
+  deploy-web:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,8 +25,7 @@ jobs:
       - name: Build web
         run: npx expo export --platform web
 
-      # main 브랜치 → 운영 배포 (Production)
-      - name: Deploy to Production
+      - name: Deploy Web to Production
         if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
@@ -34,11 +33,45 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=sideforge --branch=main
 
-      # develop 브랜치 → 프리뷰 배포 (Preview)
-      - name: Deploy to Preview
+      - name: Deploy Web to Preview
         if: github.ref == 'refs/heads/develop'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=sideforge --branch=develop
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Deploy API to Production
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api
+          command: deploy
+
+      - name: Deploy API to Development
+        if: github.ref == 'refs/heads/develop'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api
+          command: deploy --env development

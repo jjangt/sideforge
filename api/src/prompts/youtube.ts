@@ -160,16 +160,9 @@ export function buildYouTubePrompt(channel: any, videos: any[], trendingVideos: 
   }
 
   const trendingSection = trendingVideos.length > 0 ? `
-■ 동일 장르 성공 채널 상세 분석 (이 채널들이 왜 성공했는지 분석하여 benchmarks에 활용):
-${trendingVideos.map((ch: any) => `
-채널: "${ch.channelTitle}" (구독자: ${fmt(ch.channelSubscribers)}, URL: www.youtube.com/${ch.channelHandle})
-영상 목록:
-${(ch.videos || []).map((v: any) => `  - "${v.title}" (조회수: ${fmt(v.views)}, 좋아요: ${fmt(v.likes)}, 길이: ${v.duration ? `${Math.floor(v.duration/60)}분` : '?'})
-    설명: ${v.description || '없음'}`).join('\n')}`).join('\n')}
-
-위 성공 채널을 분석하여 benchmarks에 작성 시:
-- 이 채널들의 영상 제목/설명/길이에서 발견한 성공 요인을 구체적으로 작성
-- 분석 대상 채널이 이 성공 요인을 어떻게 적용할 수 있는지 구체적 액션으로 제안
+■ 동일 장르 성공 채널 (영상 제목/설명/길이/조회수 분석하여 benchmarks reason에 활용):
+${trendingVideos.map((ch: any) => `채널 "${ch.channelTitle}" (구독자 ${fmt(ch.channelSubscribers)}, URL: www.youtube.com/${ch.channelHandle})
+${(ch.videos || []).map((v: any) => `  "${v.title}" ${fmt(v.views)}회/${fmt(v.likes)}좋아요/${v.duration ? Math.floor(v.duration/60)+'분' : '?'} | ${v.description?.slice(0, 80) || ''}`).join('\n')}`).join('\n\n')}
 ` : '';
 
   return `YouTube 채널 분석. 한국어 완전한 문장으로 JSON 응답. 영어 단어 금지(한국어 표기 사용).

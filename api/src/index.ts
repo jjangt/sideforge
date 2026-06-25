@@ -531,28 +531,21 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
   const prompt = buildYouTubePrompt(channel, videos, trendingVideos);
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8000 } }),
-      }
-    );
+    const geminiRes = await callGeminiWithRetry(prompt, env);
     const geminiData = await geminiRes.json() as any;
     if (!geminiRes.ok) {
-      return { score: 0, summary: `Gemini API 오류: ${geminiRes.status} | ${geminiData.error?.message || JSON.stringify(geminiData).slice(0, 200)}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+      return { score: 0, summary: '일시적으로 분석 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.', strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
     }
     let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!text) {
-      return { score: 0, summary: `Gemini 응답 비어있음 | finishReason: ${geminiData.candidates?.[0]?.finishReason || 'none'} | blockReason: ${geminiData.promptFeedback?.blockReason || 'none'}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+      return { score: 0, summary: '분석을 완료하지 못했습니다. 다시 시도해주세요.', strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
     }
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
     // 마크다운 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
     text = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '');
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) {
-      return { score: 0, summary: `JSON 파싱 실패 | 응답 앞부분: ${text.slice(0, 300)}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+      return { score: 0, summary: '분석 결과를 처리하지 못했습니다. 다시 시도해주세요.', strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
     }
     const analysis = JSON.parse(match[0]);
     ['strengths','weaknesses','actions','contentIdeas','viralFormula','commentSummary','benchmarks'].forEach(k => {
@@ -595,8 +588,22 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
     }
     return analysis;
   } catch (e: any) {
-    return { score: 0, summary: `AI 분석 실패: ${e?.message || 'unknown'} | key=${env?.GEMINI_API_KEY ? 'SET(' + env.GEMINI_API_KEY.slice(0, 6) + '...)' : 'MISSING'}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+    return { score: 0, summary: '분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
   }
+}
+
+/** Gemini API 호출 (503 등 일시 오류 시 1회 재시도) */
+async function callGeminiWithRetry(prompt: string, env: any, retries = 1): Promise<Response> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+  const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8000 } });
+  const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body };
+
+  const res = await fetch(url, opts);
+  if (res.status >= 500 && retries > 0) {
+    await new Promise(r => setTimeout(r, 2000));
+    return callGeminiWithRetry(prompt, env, retries - 1);
+  }
+  return res;
 }
 
 function fallbackAnalysis() {

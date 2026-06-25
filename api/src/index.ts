@@ -349,13 +349,20 @@ async function resolveChannelId(handle: string, apiKey: string): Promise<string>
 }
 
 /**
- * 동일 주제에서 성공한 채널 검색 (벤치마킹용)
- * 1) 영상 categoryId로 장르 파악
- * 2) 영상 태그 + 카테고리명으로 검색
- * 3) 구독자 1만+ 채널만 롤모델로
+ * 벤치마킹 채널 검색 v2 — "약점 보완 채널 추천"
+ * 분석 대상 채널의 약점(도달률, 좋아요율)을 강점으로 가진 같은 카테고리 채널을 찾음
+ * B타입: 구독자 적거나 비슷한데 참여율 높음
+ * C타입: 구독자 비슷하거나 많은데 참여율 높음
  */
 async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: string): Promise<any[]> {
   try {
+    // 분석 대상 채널의 참여율 계산
+    const avgViews = videos.length > 0 ? videos.reduce((s, v) => s + v.views, 0) / videos.length : 0;
+    const avgLikes = videos.length > 0 ? videos.reduce((s, v) => s + v.likes, 0) / videos.length : 0;
+    const myReachRate = channel.subscribers > 0 ? avgViews / channel.subscribers : 0;
+    const myLikeRate = avgViews > 0 ? avgLikes / avgViews : 0;
+
+    // 카테고리 + 태그 기반 검색어 구성
     const categoryMap: Record<string, string> = {
       '1': '애니메이션', '2': '자동차', '10': '음악', '15': '반려동물',
       '17': '스포츠', '20': '게임', '22': '브이로그', '23': '코미디',
@@ -376,8 +383,9 @@ async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: stri
       : categoryName || channel.description?.slice(0, 30) || '';
     if (!searchQuery) return [];
 
+    // 후보 채널 검색 (더 많이 가져와서 필터링)
     const searchRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=channel&maxResults=10&key=${apiKey}`
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=channel&maxResults=15&key=${apiKey}`
     );
     const searchData = await searchRes.json() as any;
     const candidates = (searchData.items || []).filter((i: any) => {
@@ -387,26 +395,28 @@ async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: stri
     });
     if (!candidates.length) return [];
 
-    const chIds = candidates.slice(0, 6).map((i: any) => i.snippet.channelId).join(',');
+    // 후보 채널 통계 수집
+    const chIds = candidates.slice(0, 10).map((i: any) => i.snippet.channelId).join(',');
     const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chIds}&key=${apiKey}`);
     const chData = await chRes.json() as any;
-    const minSubs = Math.max(10000, channel.subscribers * 50);
-    const goodChannels = (chData.items || [])
-      .filter((ch: any) => Number(ch.statistics.subscriberCount || 0) >= minSubs)
-      .sort((a: any, b: any) => Number(b.statistics.subscriberCount || 0) - Number(a.statistics.subscriberCount || 0))
-      .slice(0, 2);
-    if (!goodChannels.length) return [];
+    if (!chData.items?.length) return [];
 
-    const results = await Promise.all(goodChannels.map(async (ch: any) => {
+    // 각 후보 채널의 최근 영상 통계 수집 + 참여율 계산
+    const channelStats = await Promise.all((chData.items || []).map(async (ch: any) => {
       try {
+        const subs = Number(ch.statistics.subscriberCount || 0);
+        if (subs < 100) return null; // 초소형 채널 제외
+
         const uploadsId = 'UU' + ch.id.slice(2);
         const listRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=5&key=${apiKey}`);
         const listData = await listRes.json() as any;
         if (!listData.items?.length) return null;
+
         const vidIds = listData.items.map((i: any) => i.contentDetails.videoId).join(',');
         const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${vidIds}&key=${apiKey}`);
         const vidData = await vidRes.json() as any;
         if (!vidData.items?.length) return null;
+
         const channelVideos = vidData.items.map((v: any) => ({
           title: v.snippet.title,
           description: (v.snippet.description || '').slice(0, 150),
@@ -414,15 +424,63 @@ async function fetchTrendingInCategory(channel: any, videos: any[], apiKey: stri
           views: Number(v.statistics.viewCount || 0),
           likes: Number(v.statistics.likeCount || 0),
         }));
+
+        const chAvgViews = channelVideos.reduce((s: number, v: any) => s + v.views, 0) / channelVideos.length;
+        const chAvgLikes = channelVideos.reduce((s: number, v: any) => s + v.likes, 0) / channelVideos.length;
+        const reachRate = subs > 0 ? chAvgViews / subs : 0;
+        const likeRate = chAvgViews > 0 ? chAvgLikes / chAvgViews : 0;
+
         return {
           channelTitle: ch.snippet.title,
           channelHandle: ch.snippet.customUrl || '',
-          channelSubscribers: Number(ch.statistics.subscriberCount || 0),
+          channelSubscribers: subs,
           videos: channelVideos,
+          reachRate,
+          likeRate,
+          avgViews: Math.round(chAvgViews),
         };
       } catch { return null; }
     }));
-    return results.filter(Boolean) as any[];
+
+    const validChannels = channelStats.filter(Boolean) as any[];
+    if (!validChannels.length) return [];
+
+    // 분석 대상보다 참여율 높은 채널만 필터링 (도달률 또는 좋아요율 기준)
+    const betterChannels = validChannels.filter(ch =>
+      ch.reachRate > myReachRate * 1.5 || ch.likeRate > myLikeRate * 1.5
+    );
+    if (!betterChannels.length) {
+      // 참여율 비교 실패 시, 조회수 높은 채널로 폴백
+      const sorted = validChannels.sort((a, b) => b.avgViews - a.avgViews);
+      return sorted.slice(0, 2).map(ch => ({ ...ch, benchmarkType: ch.channelSubscribers >= channel.subscribers ? 'C' : 'B' }));
+    }
+
+    // B타입: 구독자 0.3배~1.5배 (적거나 비슷)
+    const typeB = betterChannels
+      .filter(ch => ch.channelSubscribers <= channel.subscribers * 1.5 && ch.channelSubscribers >= channel.subscribers * 0.3)
+      .sort((a, b) => b.reachRate - a.reachRate)
+      .slice(0, 1)
+      .map(ch => ({ ...ch, benchmarkType: 'B' }));
+
+    // C타입: 구독자 1배~10배 (비슷하거나 많음)
+    const typeC = betterChannels
+      .filter(ch => ch.channelSubscribers >= channel.subscribers && ch.channelSubscribers <= channel.subscribers * 10)
+      .sort((a, b) => b.reachRate - a.reachRate)
+      .slice(0, 1)
+      .map(ch => ({ ...ch, benchmarkType: 'C' }));
+
+    // B, C 각 1개씩 없으면 전체에서 도달률 높은 순으로
+    const result = [...typeB, ...typeC];
+    if (result.length < 2) {
+      const remaining = betterChannels
+        .filter(ch => !result.some(r => r.channelTitle === ch.channelTitle))
+        .sort((a, b) => b.reachRate - a.reachRate)
+        .slice(0, 2 - result.length)
+        .map(ch => ({ ...ch, benchmarkType: ch.channelSubscribers >= channel.subscribers ? 'C' : 'B' }));
+      result.push(...remaining);
+    }
+
+    return result;
   } catch {
     return [];
   }
@@ -509,6 +567,19 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
         const nameLower = b.name.toLowerCase();
         return validNames.some(n => n.includes(nameLower) || nameLower.includes(n))
           || validHandles.some(h => b.url?.includes(h));
+      });
+      // 벤치마킹 타입 정보 추가
+      analysis.benchmarks = analysis.benchmarks.map((b: any) => {
+        const matched = trendingVideos.find(t => 
+          t.channelTitle.toLowerCase().includes(b.name?.toLowerCase()) || 
+          b.name?.toLowerCase().includes(t.channelTitle.toLowerCase())
+        );
+        if (matched) {
+          b.benchmarkType = matched.benchmarkType || '';
+          b.reachRate = matched.reachRate;
+          b.likeRate = matched.likeRate;
+        }
+        return b;
       });
     } else if (analysis.benchmarks?.length && !trendingVideos.length) {
       analysis.benchmarks = [];

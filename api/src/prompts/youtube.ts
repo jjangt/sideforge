@@ -160,9 +160,9 @@ export function buildYouTubePrompt(channel: any, videos: any[], trendingVideos: 
   }
 
   const trendingSection = trendingVideos.length > 0 ? `
-■ 동일 장르 성공 채널 (영상 제목/설명/길이/조회수 분석하여 benchmarks reason에 활용):
-${trendingVideos.map((ch: any) => `채널 "${ch.channelTitle}" (구독자 ${fmt(ch.channelSubscribers)}, URL: www.youtube.com/${ch.channelHandle})
-${(ch.videos || []).map((v: any) => `  "${v.title}" ${fmt(v.views)}회/${fmt(v.likes)}좋아요/${v.duration ? Math.floor(v.duration/60)+'분' : '?'} | ${v.description?.slice(0, 80) || ''}`).join('\n')}`).join('\n\n')}
+■ 벤치마킹 후보 채널 (분석 대상보다 참여율이 높은 같은 카테고리 채널):
+${trendingVideos.map((ch: any) => `채널 "${ch.channelTitle}" (구독자 ${fmt(ch.channelSubscribers)}, 도달률 ${(ch.reachRate * 100).toFixed(0)}%, 좋아요율 ${(ch.likeRate * 100).toFixed(1)}%, 타입: ${ch.benchmarkType === 'B' ? '작지만 강한' : '같은 규모에서 성공'}, URL: www.youtube.com/${ch.channelHandle})
+${(ch.videos || []).map((v: any) => `  "${v.title}" ${fmt(v.views)}회/${fmt(v.likes)}좋아요/${v.duration ? Math.floor(v.duration/60)+'분' : '?'}`).join('\n')}`).join('\n\n')}
 ` : '';
 
   return `YouTube 채널 분석. 한국어 완전한 문장으로 JSON 응답. 영어 단어 금지(한국어 표기 사용).
@@ -196,7 +196,7 @@ ${trendingSection}
 7. actions: 각 weakness의 구체적 해결책.
 8. contentIdeas: 이 채널 주제 내 새 소재. 댓글 요청 우선 반영. "제안. 근거: 이유+기대효과" 형식.
 9. commentSummary: ${hasComments ? '영상별 댓글 요약.' : '빈 배열.'}
-10. benchmarks: 위 성공 채널 데이터 활용. 각 채널의 영상 제목/설명/길이/조회수를 분석하여 reason에: 1) 이 채널이 성공한 구체적 요인(영상 길이, 제목 스타일, 설명란 활용법, 콘텐츠 형식 등) 2) 분석 대상 채널이 이를 적용할 수 있는 구체적 액션 작성. URL은 위 데이터에서 그대로 복사. 없으면 빈 배열.
+10. benchmarks: 위 벤치마킹 후보 채널 데이터 활용. 각 채널의 영상 제목/길이/조회수를 분석하여 reason에: 1) 이 채널이 높은 참여율을 가진 구체적 요인(영상 길이, 제목 스타일, 콘텐츠 형식 등) 2) 분석 대상 채널이 이를 적용할 수 있는 구체적 액션 작성. URL은 위 데이터에서 그대로 복사. 없으면 빈 배열.
 
 JSON:
 {"score":0,"category":"","summary":"","viralFormula":[""],"strengths":[""],"weaknesses":[""],"actions":[""],"contentIdeas":[""],"commentSummary":[],"benchmarks":[]}`;

@@ -1,7 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { globalLoading } from '../stores/useGlobalLoadingStore';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
+function getApiUrl(): string {
+  // 명시적 환경변수가 있으면 우선
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+
+  // 웹 환경: 호스트네임 기반 자동 분기
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8787';
+    if (host.includes('develop') || host.includes('dev')) return 'https://sideforge-api-dev.tjang0608.workers.dev';
+    return 'https://sideforge-api.tjang0608.workers.dev';
+  }
+
+  return 'http://localhost:8787';
+}
+
+const API_URL = getApiUrl();
 
 async function getToken(): Promise<string | null> {
   return AsyncStorage.getItem('token');

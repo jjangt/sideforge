@@ -478,14 +478,24 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 3000 } }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8000 } }),
       }
     );
     const geminiData = await geminiRes.json() as any;
+    if (!geminiRes.ok) {
+      return { score: 0, summary: `Gemini API 오류: ${geminiRes.status} | ${geminiData.error?.message || JSON.stringify(geminiData).slice(0, 200)}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+    }
     let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) {
+      return { score: 0, summary: `Gemini 응답 비어있음 | finishReason: ${geminiData.candidates?.[0]?.finishReason || 'none'} | blockReason: ${geminiData.promptFeedback?.blockReason || 'none'}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+    }
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    // 마크다운 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
+    text = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '');
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return fallbackAnalysis();
+    if (!match) {
+      return { score: 0, summary: `JSON 파싱 실패 | 응답 앞부분: ${text.slice(0, 300)}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
+    }
     const analysis = JSON.parse(match[0]);
     ['strengths','weaknesses','actions','contentIdeas','viralFormula','commentSummary','benchmarks'].forEach(k => {
       if (analysis[k] && !Array.isArray(analysis[k])) analysis[k] = [analysis[k]];
@@ -513,8 +523,8 @@ async function analyzeWithAI(ai: any, channel: any, videos: any[], trendingVideo
       );
     }
     return analysis;
-  } catch {
-    return fallbackAnalysis();
+  } catch (e: any) {
+    return { score: 0, summary: `AI 분석 실패: ${e?.message || 'unknown'} | key=${env?.GEMINI_API_KEY ? 'SET(' + env.GEMINI_API_KEY.slice(0, 6) + '...)' : 'MISSING'}`, strengths: [], weaknesses: [], actions: [], contentIdeas: [] };
   }
 }
 

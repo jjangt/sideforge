@@ -1,191 +1,156 @@
 # SideForge
 
-> AI와 함께 만드는 나만의 브랜드와 두 번째 수입
+> YouTube 채널 AI 분석 플랫폼 — 데이터 기반 바이럴 공식 추출
 
 ## Overview
 
-SideForge는 사용자의 관심사, 경험, 성향, 목표를 분석하여 수익화 가능한 브랜드를 발굴하고, 브랜드를 생성하며, 성장 방향을 제안하는 AI 공동창업자 플랫폼입니다.
+YouTube 채널 URL을 입력하면 AI(Gemini 2.5 Flash)가 채널 데이터를 분석하여 바이럴 공식, 개선 액션, 추천 콘텐츠, 벤치마킹 채널을 제공합니다.
 
-## Quick Start
+**핵심 가치**: "다음에 뭘 올려야 터지는지"를 데이터로 알려주는 서비스
+
+## Quick Start (로컬 개발)
 
 ```bash
-# 프로젝트 폴더로 이동
-cd D:\sideline\sideforge
-
 # 의존성 설치
+cd D:\sideline\sideforge
 npm install
+cd api && npm install && cd ..
 
-# 웹 개발 서버 (포트 5847)
+# 터미널 1 — 프론트엔드 (포트 5847)
 npx expo start --web --port 5847 --clear
 
-# 또는 스크립트 사용
-npm run web
+# 터미널 2 — API (포트 8787)
+cd api && npx wrangler dev --remote --env development
 ```
+
+- 프론트: http://localhost:5847
+- API: http://localhost:8787
+- API URL 분기는 자동 (`src/services/api.ts`의 `getApiUrl()`)
+
+> 상세 개발 환경 정보: [docs/dev-guide.md](docs/dev-guide.md)
 
 ## 사용자 플로우
 
 ```
-랜딩 → 온보딩(8단계) → AI 추천(3개) → 브랜드 생성 → 브랜드 상세/미리보기 → 대시보드 → AI 코치
+랜딩(/) → 로그인(/auth) → 분석(/analyze) → 리포트(/report/:id)
 ```
 
-1. **랜딩**: "내 브랜드 만들기 시작" 클릭
-2. **온보딩**: 관심사, 강점, 목표 등 8가지 질문 답변
-3. **추천**: AI가 분석한 3개 브랜드 방향 중 선택
-4. **브랜드 생성**: 자동으로 브랜드 전체 설계 (이름, 스토리, 컬러, 수익 모델 등)
-5. **대시보드**: 30일 플랜, 오늘의 액션, 점수, 콘텐츠 추천
-6. **AI 코치**: 챗봇으로 브랜드 성장 상담
+1. 채널 URL 또는 @handle 입력
+2. AI 분석 (15~30초)
+3. 리포트: 점수 → 영상 성과 → 바이럴 공식 → 강점/단점 → 개선 액션 → 추천 콘텐츠 → 벤치마킹
 
 ## Tech Stack
 
 | 분류 | 기술 |
 |------|------|
 | Framework | Expo SDK 56 + Expo Router |
-| Language | TypeScript (strict) |
+| Language | TypeScript |
 | Styling | NativeWind v4 (Tailwind CSS) |
-| State | Zustand (persist) |
-| AI | Provider Factory Pattern (Mock → OpenAI/Claude) |
-| i18n | i18next + expo-localization (ko/en/ja/zh) |
-| CI/CD | GitHub Actions + Cloudflare Pages |
+| State | Zustand |
+| AI | Gemini 2.5 Flash (Google AI API) |
+| Backend | Cloudflare Workers |
+| Database | Cloudflare D1 (SQLite) |
+| Hosting | Cloudflare Pages |
+| CI/CD | GitHub Actions |
+| i18n | i18next (ko/en/ja/zh) |
 
 ## 프로젝트 구조
 
 ```
 sideforge/
-├── app/                    # 페이지 (Expo Router)
-│   ├── _layout.tsx         # Root Layout
-│   ├── index.tsx           # 랜딩
-│   ├── onboarding.tsx      # 온보딩
-│   ├── recommendations.tsx # 추천
-│   ├── dashboard.tsx       # 대시보드
-│   ├── coach.tsx           # AI 코치
-│   └── brand/              # 브랜드 관련
+├── app/                        # 페이지 (Expo Router)
+│   ├── report/[id].tsx         # 분석 리포트
+│   ├── analyze.tsx             # 채널 분석 입력
+│   ├── auth.tsx                # 로그인/회원가입
+│   ├── admin.tsx               # 관리자
+│   └── ...
 ├── src/
-│   ├── components/ui/      # 공용 UI 컴포넌트
-│   ├── i18n/               # 다국어 (ko/en/ja/zh)
-│   ├── lib/                # 핵심 유틸리티 (navigation, feedback)
-│   ├── services/ai/        # AI Provider (핵심)
-│   ├── stores/             # Zustand 상태 관리
-│   ├── types/              # TypeScript 타입
-│   ├── hooks/              # 커스텀 훅
-│   └── constants/          # 상수 (테마 등)
-├── docs/                   # 문서
-└── .github/workflows/      # CI/CD
+│   ├── services/api.ts         # API 호출 (환경별 자동 분기)
+│   ├── components/ui/          # 공용 UI
+│   ├── stores/                 # Zustand 상태
+│   ├── i18n/                   # 다국어
+│   └── types/                  # TypeScript 타입
+├── api/                        # Cloudflare Workers 백엔드
+│   ├── src/index.ts            # 라우팅 + 핵심 로직
+│   ├── src/prompts/youtube.ts  # AI 프롬프트 (바이럴 공식 v2)
+│   ├── src/auth.ts             # JWT 인증 + Google OAuth
+│   └── wrangler.toml           # Workers 설정
+├── docs/                       # 문서
+│   ├── dev-guide.md            # ⭐ 개발 가이드 (필독)
+│   ├── architecture/           # 인프라, 배포, 설계
+│   ├── features/               # 기능 명세
+│   ├── project/                # 로드맵, 변경 이력
+│   ├── business/               # 비즈니스 모델
+│   └── security/               # 보안
+└── .github/workflows/          # CI/CD
 ```
 
 ## Documentation
 
+### ⭐ 필독 (새 세션에서 작업 시작 시)
+- **[개발 가이드](docs/dev-guide.md)** — 로컬 실행, 환경 분기, API 구조, 현재 진행 상태 전부 포함
+
+### 아키텍처 & 인프라
+- [인프라 구성](docs/architecture/infrastructure.md) — Cloudflare 서비스별 상세
+- [배포 파이프라인](docs/architecture/deployment.md) — CI/CD, 도메인, 환경별 연결
+- [백엔드 아키텍처](docs/architecture/backend.md)
+- [시스템 설계](docs/architecture/system-design.md)
+- [AI 아키텍처](docs/architecture/ai-architecture.md)
+
+### 기능 명세
+- [YouTube 분석](docs/features/youtube-analysis.md) — Phase 1 핵심
+- [YouTube 분석 v2](docs/features/youtube-analysis-v2.md) — 바이럴 공식 킬링 포인트
+- [대시보드](docs/features/dashboard.md)
+- [AI 코치](docs/features/coach.md)
+
 ### 개발 가이드
-- [AI Provider 연동 가이드](docs/api/ai-provider.md) ← **새 AI 추가 시 필독**
+- [AI Prompt 가이드](docs/api/ai-prompt-guide.md)
 - [UI 컴포넌트 API](docs/api/components.md)
-- [공용 라이브러리 (Navigation/Feedback)](docs/api/lib.md)
-- [Mock Response 구조](docs/api/mock-response.md)
-
-### 인프라 & 아키텍처
-- [인프라 구성 (Cloudflare)](docs/architecture/infrastructure.md) ← **서버/AI/DB 구성**
-- [배포 가이드](docs/architecture/deployment.md) ← **도메인/CI/CD**
-- [System Design](docs/architecture/system-design.md)
-- [Frontend](docs/architecture/frontend.md)
-- [Backend](docs/architecture/backend.md)
-- [AI Architecture](docs/architecture/ai-architecture.md)
-
-### 디자인 & i18n
-- [디자인 시스템](docs/design/design-system.md)
-- [다국어(i18n) 가이드](docs/features/i18n.md)
-
-### 기능 명세 (분석)
-- [YouTube 분석](docs/features/youtube-analysis.md) ← **Phase 1 핵심**
-- [Blog 분석](docs/features/blog-analysis.md) (Phase 2)
-- [Instagram 분석](docs/features/instagram-analysis.md) (Phase 3)
-
-### 기능 명세 (브랜드 생성 — 기존)
-- [Onboarding](docs/features/onboarding.md)
-- [Recommendations](docs/features/recommendations.md)
-- [Brand Generation](docs/features/brand-generation.md)
-- [Brand Preview](docs/features/brand-preview.md)
-- [Dashboard](docs/features/dashboard.md)
-- [Coach](docs/features/coach.md)
+- [공용 라이브러리](docs/api/lib.md)
 
 ### 프로젝트
-- [Vision](docs/project/vision.md)
 - [Roadmap](docs/project/roadmap.md)
-- [Phase 2 기획](docs/project/phase2-plan.md) ← **상용화 기능 기획**
-- [Requirements](docs/project/requirements.md)
 - [Changelog](docs/project/changelog.md)
+- [UX 품질 가이드](docs/project/ux-quality-guide.md)
 
-### 보안
-- [Security Principles](docs/security/security-principles.md)
-- [AI Safety](docs/security/ai-safety.md)
-- [Privacy](docs/security/privacy.md)
-
-### 비즈니스
-- [Business Model](docs/business/business-model.md)
+### 비즈니스 & 보안
 - [Pricing](docs/business/pricing.md)
-- [Competitors](docs/business/competitors.md)
-- [Target Users](docs/business/target-users.md)
-- [Monetization](docs/business/monetization.md)
+- [Security](docs/security/security-guide.md)
 
-## 환경변수
+## 환경별 배포
 
-`.env.example`을 복사하여 `.env` 생성:
+| 환경 | 트리거 | 프론트 | API |
+|------|--------|--------|-----|
+| 로컬 | 수동 실행 | localhost:5847 | localhost:8787 |
+| 개발 | `develop` push | develop.sideforge.pages.dev | sideforge-api-dev.workers.dev |
+| 운영 | `main` push | sideforge.pages.dev | sideforge-api.workers.dev |
 
-```bash
-copy .env.example .env
+## 브랜치 전략
+
+```
+main (운영) ← develop (개발) ← feature/* (로컬 작업)
 ```
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `AI_PROVIDER` | 사용할 AI (mock / openai / claude) | mock |
-| `OPENAI_API_KEY` | OpenAI API 키 | - |
-| `OPENAI_MODEL` | 모델명 | gpt-4o |
-| `CLAUDE_API_KEY` | Anthropic API 키 | - |
-| `CLAUDE_MODEL` | 모델명 | claude-3-5-sonnet |
-| `API_URL` | 백엔드 URL (백엔드 구축 시) | - |
+```bash
+# 작업 시작
+git checkout develop && git pull
+git checkout -b feature/작업명
 
-## AI Provider 연동
-
-현재 Mock Provider(미리 정의된 데이터)로 동작합니다.
-
-실제 AI 연동 시:
-1. `src/services/ai/providers/{name}.provider.ts` 생성
-2. `AIProvider` 인터페이스의 7개 메서드 구현
-3. `src/services/ai/provider-factory.ts`에 등록
-4. `.env`에 API 키 설정
-5. 서버 재시작
-
-→ 상세 가이드: [docs/api/ai-provider.md](docs/api/ai-provider.md)
-
-## 실행 환경별 명령어
-
-| 환경 | 명령어 | 접속 |
-|------|--------|------|
-| 웹 (개발) | `npx expo start --web --port 5847 --clear` | http://localhost:5847 |
-| Android | `npx expo start --android` | 에뮬레이터 |
-| iOS | `npx expo start --ios` | 시뮬레이터 (macOS) |
-| 모바일 실기기 | `npx expo start` → QR 스캔 | Expo Go 앱 |
-| 웹 빌드 | `npm run build:web` | dist/ 폴더 생성 |
-
-## 배포
-
-- **웹**: GitHub Actions → Cloudflare Pages 자동 배포
-  - `develop` push → 스테이징
-  - `main` push → 운영
-- **모바일**: `npx eas build --platform android/ios`
+# 작업 완료 후
+npm run deploy:dev      # develop 배포
+npm run deploy:prod     # 운영 배포
+npm run deploy:all      # 전체 배포 (feature→develop→main)
+```
 
 ## Troubleshooting
 
 | 문제 | 해결 |
 |------|------|
-| 화면 안 보임 / 스타일 안 먹힘 | `npx expo start --web --port 5847 --clear` |
-| Cannot find module 'babel-preset-expo' | `npm install` 재실행 |
-| Cannot manually set color scheme | `tailwind.config.js`에 `darkMode: "class"` 확인 |
-| ConfigError: package.json not found | 반드시 `cd D:\sideline\sideforge`에서 실행 |
-| TypeScript 에러 확인 | `npx tsc --noEmit` |
-
-## 브랜치 전략
-
-```
-main (운영/PR) → develop (개발/PR) → feature/* (로컬 작업)
-```
+| 404 on `/report/:id` | 프론트(expo 5847)와 API(wrangler 8787) 별도 실행 필요 |
+| 스타일 안 먹힘 | `npx expo start --web --port 5847 --clear` |
+| API 연결 안 됨 | `npx wrangler dev --remote --env development` 실행 확인 (8787) |
+| 빌드 에러 | `npm install` 재실행 |
+| TypeScript 에러 | `npx tsc --noEmit` |
 
 ## License
 

@@ -39,7 +39,7 @@
 
 | 환경 | 프론트엔드 | → API | → DB |
 |------|-----------|-------|------|
-| 로컬 (`localhost:5847`) | Expo Dev Server | `sideforge-api-dev` | `sideforge-db-dev` |
+| 로컬 (`localhost:5847`) | Expo Dev Server | `localhost:8787` (`--remote --env development`) | `sideforge-db-dev` (원격) |
 | 개발 (`develop.sideforge.pages.dev`) | Cloudflare Pages (Preview) | `sideforge-api-dev` | `sideforge-db-dev` |
 | 운영 (`sideforge.pages.dev`) | Cloudflare Pages (Production) | `sideforge-api` | `sideforge-db` |
 
@@ -56,16 +56,16 @@
 
 GitHub에 push만 하면 Cloudflare가 자동으로 `npm run build:web` 실행 → `dist/` 배포.
 
-### 백엔드 (수동 — wrangler deploy)
+### 백엔드 (GitHub Actions 자동 + 수동 가능)
 
 ```
-코드 수정 → wrangler deploy
+develop push → GitHub Actions → wrangler deploy --env development (자동)
+main push    → GitHub Actions → wrangler deploy (자동)
 
-  npx wrangler deploy                 → sideforge-api (운영)
-  npx wrangler deploy --env development → sideforge-api-dev (개발)
+# 수동 배포도 가능:
+cd api && npx wrangler deploy                    → sideforge-api (운영)
+cd api && npx wrangler deploy --env development  → sideforge-api-dev (개발)
 ```
-
-백엔드는 `api/` 폴더에서 직접 배포 명령 실행 필요.
 
 ### 전체 흐름도
 
